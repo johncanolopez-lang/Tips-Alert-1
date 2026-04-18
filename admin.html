@@ -21,53 +21,56 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
         let userUID = "";
+        let lB64 = "", pB64 = ""; // Variables para fotos
 
-        // CONTROL DE ACCESO
         onAuthStateChanged(auth, (u) => {
-            const authScreen = document.getElementById('auth-screen');
-            const adminPanel = document.getElementById('admin-panel');
             if(u) {
                 userUID = u.uid;
-                authScreen.classList.add('hidden');
-                adminPanel.classList.remove('hidden');
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
                 cargarDatos();
             } else {
-                authScreen.classList.remove('hidden');
-                adminPanel.classList.add('hidden');
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('admin-panel').classList.add('hidden');
             }
         });
 
-        // CARGAR DATOS EXISTENTES Y GENERAR QR
         async function cargarDatos() {
-            try {
-                const s = await get(ref(db, 'usuarios/' + userUID));
-                if(s.exists()){
-                    const d = s.val();
-                    document.getElementById('nom').value = d.config?.nombre || "";
-                    document.getElementById('ub').value = d.config?.ubi || "";
-                    document.getElementById('ale').value = d.mensaje?.texto || "";
-                    document.getElementById('ite').value = (d.lista?.items || []).join('\n');
-                    
-                    // Cargar colores guardados
-                    document.getElementById('cp').value = d.config?.colores?.primario || "#4f46e5";
-                    document.getElementById('cs').value = d.config?.colores?.secundario || "#ffffff";
-                    document.getElementById('ca').value = d.config?.colores?.acento || "#ef4444";
-                }
-                // GENERAR QR CON EL ID DEL USUARIO
-                const link = `https://johncanolopez-lang.github.io/Tips-Alert-1/index.html?id=${userUID}`;
-                document.getElementById('qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
-            } catch(e) { console.error(e); }
+            const s = await get(ref(db, 'usuarios/' + userUID));
+            if(s.exists()){
+                const d = s.val();
+                document.getElementById('nom').value = d.config?.nombre || "";
+                document.getElementById('ub').value = d.config?.ubi || "";
+                document.getElementById('ale').value = d.mensaje?.texto || "";
+                document.getElementById('ite').value = (d.lista?.items || []).join('\n');
+                document.getElementById('cp').value = d.config?.colores?.primario || "#4f46e5";
+                document.getElementById('cs').value = d.config?.colores?.secundario || "#ffffff";
+                document.getElementById('ca').value = d.config?.colores?.acento || "#ef4444";
+                lB64 = d.config?.logo || "";
+                pB64 = d.config?.promo || "";
+            }
+            actualizarEnlace();
         }
 
-        // GUARDAR CAMBIOS (INCLUYE COLORES)
+        function actualizarEnlace() {
+            const link = `https://johncanolopez-lang.github.io/Tips-Alert-1/index.html?id=${userUID}`;
+            document.getElementById('qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
+            document.getElementById('btn-compartir').onclick = () => {
+                const texto = `Hola, este es nuestro estado de servicios: ${link}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+            };
+        }
+
+        const conv = f => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
+        window.upL = async (e) => { lB64 = await conv(e.target.files[0]); alert("Logo cargado"); };
+        window.upP = async (e) => { pB64 = await conv(e.target.files[0]); alert("Imagen promo cargada"); };
+
         window.guardar = () => {
-            const btn = document.getElementById('btn-guardar');
-            btn.innerText = "SINCRONIZANDO...";
-            
             set(ref(db, 'usuarios/' + userUID), {
                 config: { 
                     nombre: document.getElementById('nom').value, 
                     ubi: document.getElementById('ub').value,
+                    logo: lB64, promo: pB64,
                     colores: {
                         primario: document.getElementById('cp').value,
                         secundario: document.getElementById('cs').value,
@@ -76,73 +79,53 @@
                 },
                 mensaje: { texto: document.getElementById('ale').value },
                 lista: { items: document.getElementById('ite').value.split('\n').filter(x => x.trim()) }
-            }).then(() => {
-                alert("✅ ¡Marca y servicios actualizados!");
-                btn.innerText = "SINCRONIZAR TODO";
-            }).catch(e => {
-                alert("Error: " + e.message);
-                btn.innerText = "SINCRONIZAR TODO";
-            });
+            }).then(() => alert("✅ Sincronizado"));
         };
 
-        window.manejarAuth = () => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('pass').value;
-            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Error de acceso"));
-        };
-
+        window.manejarAuth = () => signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('pass').value);
         window.salir = () => signOut(auth);
     </script>
 </head>
-<body class="bg-slate-100 min-h-screen p-4 flex flex-col items-center font-sans">
+<body class="bg-slate-100 p-4 font-sans flex flex-col items-center">
 
-    <div id="auth-screen" class="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl text-center mt-10">
-        <h1 class="font-black italic text-2xl mb-6 uppercase tracking-tighter">Acceso Admin</h1>
-        <input id="email" type="email" placeholder="Correo" class="w-full p-4 mb-3 border rounded-2xl outline-none focus:ring-2 ring-indigo-500">
-        <input id="pass" type="password" placeholder="Contraseña" class="w-full p-4 mb-6 border rounded-2xl outline-none focus:ring-2 ring-indigo-500">
-        <button onclick="manejarAuth()" class="w-full bg-slate-900 text-white py-4 rounded-full font-black uppercase tracking-widest">Entrar</button>
+    <div id="auth-screen" class="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl mt-10">
+        <h2 class="text-center font-black mb-6 uppercase">Acceso Admin</h2>
+        <input id="email" type="email" placeholder="Correo" class="w-full p-4 mb-4 border rounded-2xl">
+        <input id="pass" type="password" placeholder="Clave" class="w-full p-4 mb-4 border rounded-2xl">
+        <button onclick="manejarAuth()" class="w-full bg-slate-900 text-white py-4 rounded-full font-black">ENTRAR</button>
     </div>
 
-    <div id="admin-panel" class="hidden w-full max-w-2xl space-y-6">
-        <div class="bg-white p-6 rounded-[2rem] shadow-md flex justify-between items-center">
-            <span class="font-black italic uppercase">Panel de Control</span>
-            <button onclick="salir()" class="text-[10px] font-bold text-red-500 uppercase px-4 py-2 bg-red-50 rounded-full">Salir</button>
-        </div>
-
+    <div id="admin-panel" class="hidden w-full max-w-2xl space-y-4">
         <div class="bg-white p-8 rounded-[3rem] shadow-xl space-y-6">
             <div class="grid grid-cols-2 gap-4">
                 <input id="nom" type="text" placeholder="Empresa" class="p-4 bg-slate-50 border rounded-2xl font-bold">
-                <input id="ub" type="text" placeholder="Sede/Ciudad" class="p-4 bg-slate-50 border rounded-2xl font-bold">
+                <input id="ub" type="text" placeholder="Sede" class="p-4 bg-slate-50 border rounded-2xl font-bold">
             </div>
 
-            <div class="bg-slate-50 p-6 rounded-2xl border border-dashed border-slate-200">
-                <p class="text-[10px] font-black uppercase text-slate-400 mb-4 text-center tracking-widest">Identidad Corporativa (60-30-10)</p>
-                <div class="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                        <p class="text-[9px] font-bold mb-1">PRIMARIO</p>
-                        <input id="cp" type="color" class="w-full h-12 rounded-lg cursor-pointer">
-                    </div>
-                    <div>
-                        <p class="text-[9px] font-bold mb-1">SECUNDARIO</p>
-                        <input id="cs" type="color" class="w-full h-12 rounded-lg cursor-pointer">
-                    </div>
-                    <div>
-                        <p class="text-[9px] font-bold mb-1">ACENTO</p>
-                        <input id="ca" type="color" class="w-full h-12 rounded-lg cursor-pointer">
-                    </div>
-                </div>
+            <div class="grid grid-cols-2 gap-4">
+                <label class="bg-slate-800 text-white p-4 rounded-2xl text-center text-[10px] font-black cursor-pointer uppercase">Cargar Logo<input type="file" class="hidden" onchange="upL(event)"></label>
+                <label class="bg-indigo-400 text-white p-4 rounded-2xl text-center text-[10px] font-black cursor-pointer uppercase">Imagen Promo<input type="file" class="hidden" onchange="upP(event)"></label>
             </div>
 
-            <input id="ale" type="text" placeholder="MENSAJE DE ALERTA" class="w-full p-4 bg-red-50 text-red-600 font-black rounded-2xl text-center border-2 border-dashed border-red-200">
+            <div class="grid grid-cols-3 gap-2 text-center text-[9px] font-bold">
+                <div>Primario<input id="cp" type="color" class="w-full h-10 rounded-lg"></div>
+                <div>Secundario<input id="cs" type="color" class="w-full h-10 rounded-lg"></div>
+                <div>Acento<input id="ca" type="color" class="w-full h-10 rounded-lg"></div>
+            </div>
+
+            <input id="ale" type="text" placeholder="ALERTA" class="w-full p-4 bg-red-50 text-red-600 font-black rounded-2xl text-center">
+            <textarea id="ite" placeholder="Servicios..." class="w-full p-4 bg-slate-50 border rounded-2xl h-32"></textarea>
             
-            <textarea id="ite" placeholder="Servicio : Estado (Ej: PISCINA : ABIERTA)" class="w-full p-6 bg-slate-50 rounded-[2.5rem] h-40 border outline-none font-medium"></textarea>
-            
-            <button id="btn-guardar" onclick="guardar()" class="w-full bg-indigo-600 text-white font-black py-6 rounded-full shadow-2xl uppercase italic text-xl">Sincronizar Todo</button>
+            <button onclick="guardar()" class="w-full bg-indigo-600 text-white py-6 rounded-full font-black uppercase shadow-xl">Sincronizar Todo</button>
         </div>
 
-        <div class="bg-slate-900 p-8 rounded-[3rem] text-center text-white">
-            <img id="qr" class="mx-auto bg-white p-4 rounded-[2rem] mb-4 shadow-2xl">
-            <p class="text-[10px] font-bold opacity-40 uppercase tracking-widest text-center">Escanea para visualizar la pantalla corporativa</p>
+        <div class="bg-slate-900 p-8 rounded-[3rem] text-center">
+            <img id="qr" class="mx-auto bg-white p-4 rounded-2xl mb-4 shadow-2xl">
+            <button id="btn-compartir" class="bg-green-500 text-white px-8 py-4 rounded-full font-black uppercase text-xs mb-4 hover:bg-green-600 transition-colors">
+                Compartir link por WhatsApp
+            </button>
+            <br>
+            <button onclick="salir()" class="text-white opacity-40 text-[10px] uppercase">Cerrar Sesión</button>
         </div>
     </div>
 </body>

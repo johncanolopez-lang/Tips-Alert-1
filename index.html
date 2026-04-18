@@ -2,16 +2,44 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tips Alert - Pantalla Viva</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tips Alert - Visualizador</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-        .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 12s linear infinite; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-item { opacity: 0; animation: slideIn 0.6s ease-out forwards; }
-        .marquee-container { overflow: hidden; width: 100%; mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 15s linear infinite;
+        }
+        /* Transición suave para los cambios de color */
+        body, h1, div { transition: all 0.5s ease; }
     </style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans overflow-hidden">
+
+    <div class="bg-white shadow-lg p-6">
+        <div class="overflow-hidden">
+            <h1 id="nombre-empresa" class="text-6xl font-black italic uppercase tracking-tighter animate-marquee">
+                Cargando información...
+            </h1>
+        </div>
+        <p id="sede-empresa" class="text-center font-bold text-slate-400 uppercase tracking-widest mt-2"></p>
+    </div>
+
+    <div id="barra-alerta" class="p-4 text-center">
+        <p id="texto-alerta" class="font-black italic uppercase text-2xl tracking-tight"></p>
+    </div>
+
+    <div class="p-6 max-w-4xl mx-auto">
+        <div id="lista-servicios" class="grid grid-cols-1 gap-4">
+            <p class="text-center text-slate-400">Conectando con el servidor...</p>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -22,75 +50,71 @@
             projectId: "tips-alert",
             databaseURL: "https://tips-alert-default-rtdb.firebaseio.com"
         };
+
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // 1. OBTENER EL ID DESDE EL QR (URL)
         const urlParams = new URLSearchParams(window.location.search);
-        let cid = urlParams.get('id') || localStorage.getItem('last_id');
+        const userUID = urlParams.get('id');
 
-        if(cid) {
-            localStorage.setItem('last_id', cid);
-            onValue(ref(db, 'usuarios/' + cid), (snapshot) => {
-                const d = snapshot.val();
-                if(!d) return;
+        if (userUID) {
+            const userRef = ref(db, 'usuarios/' + userUID);
+            
+            // 2. ESCUCHAR CAMBIOS EN TIEMPO REAL
+            onValue(userRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const d = snapshot.val();
+                    
+                    // --- APLICAR TEXTOS ---
+                    document.getElementById('nombre-empresa').innerText = d.config?.nombre || "Tips Alert";
+                    document.getElementById('sede-empresa').innerText = d.config?.ubi || "";
+                    document.getElementById('texto-alerta').innerText = d.mensaje?.texto || "SIN NOVEDAD";
 
-                const pColor = d.config.colores?.primario || "#4f46e5";
-                document.getElementById('header-logo').src = d.config.logo || "";
-                const empTxt = document.getElementById('empresa-txt');
-                empTxt.innerText = d.config.nombre || "";
-                empTxt.style.color = pColor;
-                document.getElementById('ubi-txt').innerText = d.config.ubi || "";
+                    // --- REGLA 60-30-10 DE COLORES ---
+                    const cp = d.config?.colores?.primario || "#000000"; // 60% (Nombre)
+                    const cs = d.config?.colores?.secundario || "#ffffff"; // 30% (Fondo suave)
+                    const ca = d.config?.colores?.acento || "#ef4444"; // 10% (Alertas)
 
-                const pImg = document.getElementById('promo-img');
-                const pCont = document.getElementById('promo-container');
-                if(d.config.promo) { pImg.src = d.config.promo; pCont.classList.remove('hidden'); }
-                else { pCont.classList.add('hidden'); }
+                    // Color Primario al nombre
+                    document.getElementById('nombre-empresa').style.color = cp;
+                    
+                    // Color Secundario al fondo de la página (con 10% de opacidad)
+                    document.body.style.backgroundColor = cs + "1A"; 
 
-                const aBox = document.getElementById('alert-box');
-                aBox.style.backgroundColor = d.config.colores?.acento || "#ef4444";
-                document.getElementById('alert-txt').innerText = (d.mensaje.texto || "").toUpperCase();
+                    // Color de Acento a la barra de alerta
+                    const barra = document.getElementById('barra-alerta');
+                    barra.style.backgroundColor = ca;
+                    barra.style.color = "#ffffff"; // Texto de alerta siempre blanco para leer bien
 
-                const list = document.getElementById('list');
-                list.innerHTML = "";
-                (d.lista?.items || []).forEach((item, i) => {
-                    const [n, t] = item.includes(':') ? item.split(':') : [item, ''];
-                    list.innerHTML += `
-                        <div class="flex mb-3 w-full animate-item" style="animation-delay: ${i * 0.15}s">
-                            <div class="bg-white p-4 px-8 rounded-full shadow-lg border-l-[10px] flex items-center justify-between w-full" style="border-color: ${pColor}">
-                                <span class="font-black uppercase text-slate-800 text-sm md:text-xl truncate">${n.trim()}</span>
-                                ${t ? `<span class="ml-2 px-3 py-1 rounded-full text-[10px] font-black text-white" style="background-color: ${d.config.colores?.secundario}">${t.trim()}</span>` : ''}
-                            </div>
-                        </div>`;
-                });
+                    // --- CARGAR SERVICIOS ---
+                    const listaDiv = document.getElementById('lista-servicios');
+                    listaDiv.innerHTML = "";
+                    
+                    if (d.lista?.items) {
+                        d.lista.items.forEach(item => {
+                            const partes = item.split(':');
+                            const nombre = partes[0] || "";
+                            const estado = partes[1] || "";
+                            
+                            const card = document.createElement('div');
+                            card.className = "bg-white p-6 rounded-[2rem] shadow-sm flex justify-between items-center border-l-8";
+                            card.style.borderLeftColor = cp; // Borde del color primario
+                            
+                            card.innerHTML = `
+                                <span class="font-bold uppercase text-xl">${nombre}</span>
+                                <span class="font-black italic uppercase text-indigo-600">${estado}</span>
+                            `;
+                            listaDiv.appendChild(card);
+                        });
+                    }
+                } else {
+                    document.getElementById('nombre-empresa').innerText = "Usuario no encontrado";
+                }
             });
+        } else {
+            document.getElementById('nombre-empresa').innerText = "QR Inválido o sin ID";
         }
-        setInterval(() => {
-            const d = new Date();
-            document.getElementById('reloj').innerText = d.getHours() + ":" + String(d.getMinutes()).padStart(2, '0');
-        }, 1000);
     </script>
-</head>
-<body class="bg-slate-50 p-4 min-h-screen flex flex-col font-sans overflow-x-hidden">
-    <header class="bg-white p-4 rounded-[2rem] shadow-xl flex justify-between items-center mb-6 border-b-4 border-slate-100">
-        <div class="flex items-center gap-3 w-3/4 overflow-hidden">
-            <img id="header-logo" class="h-12 w-12 object-contain flex-shrink-0">
-            <div class="marquee-container">
-                <h1 id="empresa-txt" class="animate-marquee font-black uppercase italic text-3xl leading-none tracking-tighter">...</h1>
-                <p id="ubi-txt" class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1"></p>
-            </div>
-        </div>
-        <div id="reloj" class="text-2xl font-black text-slate-900 italic">00:00</div>
-    </header>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-grow items-start">
-        <div id="list" class="flex flex-col order-2 lg:order-1"></div>
-        <div class="flex flex-col items-center order-1 lg:order-2">
-            <div id="promo-container" class="w-full aspect-video bg-white rounded-[2rem] overflow-hidden shadow-2xl border-[6px] border-white mb-6 hidden">
-                <img id="promo-img" class="w-full h-full object-cover">
-            </div>
-            <div id="alert-box" class="w-full p-6 rounded-[2rem] text-white shadow-xl text-center">
-                <h2 id="alert-txt" class="text-lg md:text-3xl font-black italic uppercase tracking-tighter">...</h2>
-            </div>
-        </div>
-    </div>
 </body>
-</html> 
+</html>lores.secundario + "10"; // 10 añade transparencia

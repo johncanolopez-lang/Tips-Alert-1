@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -20,48 +20,12 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
-
         let userUID = "";
-        let lB64 = "", pB64 = "";
 
-        window.manejarAuth = async (tipo) => {
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('pass').value.trim();
-            const btn = document.getElementById('btn-entrar');
-
-            if (!email || !pass) {
-                alert("⚠️ Por favor, escribe tu correo y contraseña.");
-                return;
-            }
-
-            try {
-                btn.innerText = "CONECTANDO...";
-                btn.disabled = true;
-
-                if (tipo === 'registro') {
-                    await createUserWithEmailAndPassword(auth, email, pass);
-                } else {
-                    await signInWithEmailAndPassword(auth, email, pass);
-                }
-                // Si llega aquí, onAuthStateChanged se encargará del resto
-            } catch (e) {
-                console.error(e);
-                btn.innerText = "ENTRAR";
-                btn.disabled = false;
-                
-                // Mensajes de error amigables
-                if(e.code === 'auth/network-request-failed') alert("❌ Error de red. Revisa tu internet.");
-                else if(e.code === 'auth/invalid-credential') alert("❌ Correo o clave incorrectos.");
-                else alert("Error: " + e.message);
-            }
-        };
-
-        window.salir = () => signOut(auth);
-
+        // CONTROL DE ACCESO
         onAuthStateChanged(auth, (u) => {
             const authScreen = document.getElementById('auth-screen');
             const adminPanel = document.getElementById('admin-panel');
-            
             if(u) {
                 userUID = u.uid;
                 authScreen.classList.add('hidden');
@@ -70,12 +34,10 @@
             } else {
                 authScreen.classList.remove('hidden');
                 adminPanel.classList.add('hidden');
-                const btn = document.getElementById('btn-entrar');
-                btn.innerText = "ENTRAR";
-                btn.disabled = false;
             }
         });
 
+        // CARGAR DATOS EXISTENTES Y GENERAR QR
         async function cargarDatos() {
             try {
                 const s = await get(ref(db, 'usuarios/' + userUID));
@@ -85,71 +47,102 @@
                     document.getElementById('ub').value = d.config?.ubi || "";
                     document.getElementById('ale').value = d.mensaje?.texto || "";
                     document.getElementById('ite').value = (d.lista?.items || []).join('\n');
-                    lB64 = d.config?.logo || "";
-                    pB64 = d.config?.promo || "";
+                    
+                    // Cargar colores guardados
+                    document.getElementById('cp').value = d.config?.colores?.primario || "#4f46e5";
+                    document.getElementById('cs').value = d.config?.colores?.secundario || "#ffffff";
+                    document.getElementById('ca').value = d.config?.colores?.acento || "#ef4444";
                 }
-              const link = `https://johncanolopez-lang.github.io/Tips-Alert-1/index.html?id=${userUID}`;
+                // GENERAR QR CON EL ID DEL USUARIO
+                const link = `https://johncanolopez-lang.github.io/Tips-Alert-1/index.html?id=${userUID}`;
                 document.getElementById('qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
-            } catch(e) { console.error("Error cargando datos:", e); }
+            } catch(e) { console.error(e); }
         }
 
-        const conv = f => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
-        window.upL = async (e) => { lB64 = await conv(e.target.files[0]); alert("Logo cargado"); };
-        window.upP = async (e) => { pB64 = await conv(e.target.files[0]); alert("Imagen publicitaria cargada"); };
-
+        // GUARDAR CAMBIOS (INCLUYE COLORES)
         window.guardar = () => {
-            const btnG = document.getElementById('btn-guardar');
-            btnG.innerText = "GUARDANDO...";
+            const btn = document.getElementById('btn-guardar');
+            btn.innerText = "SINCRONIZANDO...";
             
             set(ref(db, 'usuarios/' + userUID), {
-                config: { nombre: document.getElementById('nom').value, ubi: document.getElementById('ub').value, logo: lB64, promo: pB64, colores: {primario: "#4f46e5", secundario: "#fbbf24", acento: "#ef4444"} },
+                config: { 
+                    nombre: document.getElementById('nom').value, 
+                    ubi: document.getElementById('ub').value,
+                    colores: {
+                        primario: document.getElementById('cp').value,
+                        secundario: document.getElementById('cs').value,
+                        acento: document.getElementById('ca').value
+                    }
+                },
                 mensaje: { texto: document.getElementById('ale').value },
                 lista: { items: document.getElementById('ite').value.split('\n').filter(x => x.trim()) }
             }).then(() => {
-                alert("✅ ¡Cambios aplicados con éxito!");
-                btnG.innerText = "SINCRONIZAR TODO";
+                alert("✅ ¡Marca y servicios actualizados!");
+                btn.innerText = "SINCRONIZAR TODO";
             }).catch(e => {
-                alert("Error al guardar: " + e.message);
-                btnG.innerText = "SINCRONIZAR TODO";
+                alert("Error: " + e.message);
+                btn.innerText = "SINCRONIZAR TODO";
             });
         };
+
+        window.manejarAuth = () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Error de acceso"));
+        };
+
+        window.salir = () => signOut(auth);
     </script>
 </head>
-<body class="bg-slate-100 min-h-screen p-4 flex items-center justify-center font-sans">
-    
-    <div id="auth-screen" class="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl text-center border-b-8 border-indigo-600">
-        <h1 class="font-black italic text-3xl mb-8 uppercase tracking-tighter text-slate-800">Tips Alert</h1>
-        <div class="space-y-4">
-            <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-4 bg-slate-50 rounded-2xl border outline-none focus:ring-2 ring-indigo-500">
-            <input id="pass" type="password" placeholder="Contraseña" class="w-full p-4 bg-slate-50 rounded-2xl border outline-none focus:ring-2 ring-indigo-500">
-            <button id="btn-entrar" onclick="manejarAuth('login')" class="w-full bg-slate-900 text-white font-black py-5 rounded-full uppercase italic tracking-widest shadow-xl transition-all active:scale-95">Entrar</button>
-            <button onclick="manejarAuth('registro')" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-indigo-600">Crear cuenta nueva</button>
-        </div>
+<body class="bg-slate-100 min-h-screen p-4 flex flex-col items-center font-sans">
+
+    <div id="auth-screen" class="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl text-center mt-10">
+        <h1 class="font-black italic text-2xl mb-6 uppercase tracking-tighter">Acceso Admin</h1>
+        <input id="email" type="email" placeholder="Correo" class="w-full p-4 mb-3 border rounded-2xl outline-none focus:ring-2 ring-indigo-500">
+        <input id="pass" type="password" placeholder="Contraseña" class="w-full p-4 mb-6 border rounded-2xl outline-none focus:ring-2 ring-indigo-500">
+        <button onclick="manejarAuth()" class="w-full bg-slate-900 text-white py-4 rounded-full font-black uppercase tracking-widest">Entrar</button>
     </div>
 
-    <div id="admin-panel" class="hidden w-full max-w-4xl space-y-6 self-start mt-4">
+    <div id="admin-panel" class="hidden w-full max-w-2xl space-y-6">
         <div class="bg-white p-6 rounded-[2rem] shadow-md flex justify-between items-center">
-            <span class="font-black italic uppercase text-slate-800">Panel Admin</span>
+            <span class="font-black italic uppercase">Panel de Control</span>
             <button onclick="salir()" class="text-[10px] font-bold text-red-500 uppercase px-4 py-2 bg-red-50 rounded-full">Salir</button>
         </div>
 
         <div class="bg-white p-8 rounded-[3rem] shadow-xl space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input id="nom" type="text" placeholder="Nombre Empresa" class="p-4 bg-slate-50 rounded-2xl border font-bold">
-                <input id="ub" type="text" placeholder="Ciudad / Sede" class="p-4 bg-slate-50 rounded-2xl border font-bold">
-            </div>
             <div class="grid grid-cols-2 gap-4">
-                <label class="bg-slate-800 text-white p-4 rounded-2xl text-center text-[10px] font-black cursor-pointer uppercase">Logo Principal<input type="file" class="hidden" onchange="upL(event)"></label>
-                <label class="bg-indigo-600 text-white p-4 rounded-2xl text-center text-[10px] font-black cursor-pointer uppercase shadow-lg">Imagen Promo<input type="file" class="hidden" onchange="upP(event)"></label>
+                <input id="nom" type="text" placeholder="Empresa" class="p-4 bg-slate-50 border rounded-2xl font-bold">
+                <input id="ub" type="text" placeholder="Sede/Ciudad" class="p-4 bg-slate-50 border rounded-2xl font-bold">
             </div>
-            <input id="ale" type="text" placeholder="ALERTA (PISCINA CERRADA, ETC)" class="w-full p-4 bg-red-50 text-red-600 font-black rounded-2xl text-center text-xl border-2 border-dashed border-red-200">
-            <textarea id="ite" placeholder="Servicio : Estado (uno por línea)" class="w-full p-6 bg-slate-50 rounded-[2.5rem] h-48 border outline-none font-medium"></textarea>
-            <button id="btn-guardar" onclick="guardar()" class="w-full bg-indigo-600 text-white font-black py-6 rounded-full shadow-2xl uppercase italic text-xl transition-all active:scale-95">Sincronizar Todo</button>
+
+            <div class="bg-slate-50 p-6 rounded-2xl border border-dashed border-slate-200">
+                <p class="text-[10px] font-black uppercase text-slate-400 mb-4 text-center tracking-widest">Identidad Corporativa (60-30-10)</p>
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <p class="text-[9px] font-bold mb-1">PRIMARIO</p>
+                        <input id="cp" type="color" class="w-full h-12 rounded-lg cursor-pointer">
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-bold mb-1">SECUNDARIO</p>
+                        <input id="cs" type="color" class="w-full h-12 rounded-lg cursor-pointer">
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-bold mb-1">ACENTO</p>
+                        <input id="ca" type="color" class="w-full h-12 rounded-lg cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <input id="ale" type="text" placeholder="MENSAJE DE ALERTA" class="w-full p-4 bg-red-50 text-red-600 font-black rounded-2xl text-center border-2 border-dashed border-red-200">
+            
+            <textarea id="ite" placeholder="Servicio : Estado (Ej: PISCINA : ABIERTA)" class="w-full p-6 bg-slate-50 rounded-[2.5rem] h-40 border outline-none font-medium"></textarea>
+            
+            <button id="btn-guardar" onclick="guardar()" class="w-full bg-indigo-600 text-white font-black py-6 rounded-full shadow-2xl uppercase italic text-xl">Sincronizar Todo</button>
         </div>
 
         <div class="bg-slate-900 p-8 rounded-[3rem] text-center text-white">
             <img id="qr" class="mx-auto bg-white p-4 rounded-[2rem] mb-4 shadow-2xl">
-            <p class="text-[10px] font-bold opacity-40 uppercase tracking-widest">Escanea para abrir la pantalla</p>
+            <p class="text-[10px] font-bold opacity-40 uppercase tracking-widest text-center">Escanea para visualizar la pantalla corporativa</p>
         </div>
     </div>
 </body>

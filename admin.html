@@ -88,7 +88,7 @@
                     lB64 = d.config?.logo || "";
                     pB64 = d.config?.promo || "";
                 }
-                const link = window.location.href.replace('admin.html', 'index.html') + `?id=${userUID}`;
+              const link = `https://johncanolopez-lang.github.io/Tips-Alert-1/index.html?id=${userUID}`;
                 document.getElementById('qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
             } catch(e) { console.error("Error cargando datos:", e); }
         }

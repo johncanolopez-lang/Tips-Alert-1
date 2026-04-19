@@ -21,7 +21,7 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
         let userUID = "";
-        let lB64 = "", pB64 = ""; // Variables para fotos
+        let lB64 = "", pB64 = "";
 
         onAuthStateChanged(auth, (u) => {
             if(u) {
@@ -43,9 +43,6 @@
                 document.getElementById('ub').value = d.config?.ubi || "";
                 document.getElementById('ale').value = d.mensaje?.texto || "";
                 document.getElementById('ite').value = (d.lista?.items || []).join('\n');
-                document.getElementById('cp').value = d.config?.colores?.primario || "#4f46e5";
-                document.getElementById('cs').value = d.config?.colores?.secundario || "#ffffff";
-                document.getElementById('ca').value = d.config?.colores?.acento || "#ef4444";
                 lB64 = d.config?.logo || "";
                 pB64 = d.config?.promo || "";
             }
@@ -56,7 +53,7 @@
             const link = `https://johncanolopez-lang.github.io/Tips-Alert-1/index.html?id=${userUID}`;
             document.getElementById('qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
             document.getElementById('btn-compartir').onclick = () => {
-                const texto = `Hola, este es nuestro estado de servicios: ${link}`;
+                const texto = `Estado del servicio: ${link}`;
                 window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
             };
         }
@@ -68,14 +65,8 @@
         window.guardar = () => {
             set(ref(db, 'usuarios/' + userUID), {
                 config: { 
-                    nombre: document.getElementById('nom').value, 
-                    ubi: document.getElementById('ub').value,
-                    logo: lB64, promo: pB64,
-                    colores: {
-                        primario: document.getElementById('cp').value,
-                        secundario: document.getElementById('cs').value,
-                        acento: document.getElementById('ca').value
-                    }
+                    nombre: document.getElementById('nom').value, ubi: document.getElementById('ub').value,
+                    logo: lB64, promo: pB64
                 },
                 mensaje: { texto: document.getElementById('ale').value },
                 lista: { items: document.getElementById('ite').value.split('\n').filter(x => x.trim()) }
@@ -87,45 +78,29 @@
     </script>
 </head>
 <body class="bg-slate-100 p-4 font-sans flex flex-col items-center">
-
     <div id="auth-screen" class="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl mt-10">
-        <h2 class="text-center font-black mb-6 uppercase">Acceso Admin</h2>
         <input id="email" type="email" placeholder="Correo" class="w-full p-4 mb-4 border rounded-2xl">
         <input id="pass" type="password" placeholder="Clave" class="w-full p-4 mb-4 border rounded-2xl">
         <button onclick="manejarAuth()" class="w-full bg-slate-900 text-white py-4 rounded-full font-black">ENTRAR</button>
     </div>
 
     <div id="admin-panel" class="hidden w-full max-w-2xl space-y-4">
-        <div class="bg-white p-8 rounded-[3rem] shadow-xl space-y-6">
+        <div class="bg-white p-8 rounded-[3rem] shadow-xl space-y-4">
             <div class="grid grid-cols-2 gap-4">
                 <input id="nom" type="text" placeholder="Empresa" class="p-4 bg-slate-50 border rounded-2xl font-bold">
                 <input id="ub" type="text" placeholder="Sede" class="p-4 bg-slate-50 border rounded-2xl font-bold">
             </div>
-
             <div class="grid grid-cols-2 gap-4">
                 <label class="bg-slate-800 text-white p-4 rounded-2xl text-center text-[10px] font-black cursor-pointer uppercase">Cargar Logo<input type="file" class="hidden" onchange="upL(event)"></label>
                 <label class="bg-indigo-400 text-white p-4 rounded-2xl text-center text-[10px] font-black cursor-pointer uppercase">Imagen Promo<input type="file" class="hidden" onchange="upP(event)"></label>
             </div>
-
-            <div class="grid grid-cols-3 gap-2 text-center text-[9px] font-bold">
-                <div>Primario<input id="cp" type="color" class="w-full h-10 rounded-lg"></div>
-                <div>Secundario<input id="cs" type="color" class="w-full h-10 rounded-lg"></div>
-                <div>Acento<input id="ca" type="color" class="w-full h-10 rounded-lg"></div>
-            </div>
-
             <input id="ale" type="text" placeholder="ALERTA" class="w-full p-4 bg-red-50 text-red-600 font-black rounded-2xl text-center">
-            <textarea id="ite" placeholder="Servicios..." class="w-full p-4 bg-slate-50 border rounded-2xl h-32"></textarea>
-            
+            <textarea id="ite" placeholder="Servicio : Estado" class="w-full p-4 bg-slate-50 border rounded-2xl h-32"></textarea>
             <button onclick="guardar()" class="w-full bg-indigo-600 text-white py-6 rounded-full font-black uppercase shadow-xl">Sincronizar Todo</button>
         </div>
-
         <div class="bg-slate-900 p-8 rounded-[3rem] text-center">
             <img id="qr" class="mx-auto bg-white p-4 rounded-2xl mb-4 shadow-2xl">
-            <button id="btn-compartir" class="bg-green-500 text-white px-8 py-4 rounded-full font-black uppercase text-xs mb-4 hover:bg-green-600 transition-colors">
-                Compartir link por WhatsApp
-            </button>
-            <br>
-            <button onclick="salir()" class="text-white opacity-40 text-[10px] uppercase">Cerrar Sesión</button>
+            <button id="btn-compartir" class="bg-green-500 text-white px-8 py-4 rounded-full font-black uppercase text-xs">Compartir WhatsApp</button>
         </div>
     </div>
 </body>

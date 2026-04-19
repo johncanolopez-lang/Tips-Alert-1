@@ -3,35 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tips Alert - Estado del Servicio</title>
+    <title>Tips Alert - Visualizador</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { transition: all 0.5s ease; }
-        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
-        .bg-glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+        body { transition: background 0.5s ease; }
+        .card-shadow { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
     </style>
 </head>
-<body class="bg-[#f8fafc] min-h-screen font-sans p-4">
+<body class="bg-slate-50 min-h-screen font-sans p-4">
 
-    <div class="max-w-md mx-auto bg-white rounded-[2.5rem] p-4 mb-4 flex justify-between items-center card-shadow border border-slate-100">
-        <div class="flex items-center gap-3">
-            <img id="logo-img" src="" class="h-12 w-auto hidden" alt="Logo">
-            <div class="flex flex-col">
-                <span id="nombre-empresa" class="font-black text-slate-800 leading-none text-lg">Cargando...</span>
-                <span id="sede-empresa" class="text-[10px] uppercase tracking-widest font-bold text-slate-400"></span>
+    <div class="max-w-md mx-auto bg-white rounded-3xl p-4 mb-4 flex justify-between items-center card-shadow">
+        <div class="flex items-center gap-3 overflow-hidden">
+            <img id="logo-img" src="" class="h-10 w-auto hidden object-contain" alt="Logo">
+            <div class="flex flex-col overflow-hidden">
+                <span id="nombre-empresa" class="font-black text-slate-800 text-sm uppercase truncate leading-tight">Cargando...</span>
+                <span id="sede-empresa" class="text-[9px] uppercase tracking-tighter font-bold text-slate-400 truncate"></span>
             </div>
         </div>
-        <div id="reloj" class="bg-slate-100 px-5 py-3 rounded-2xl font-black text-slate-700 text-xl">00:00</div>
+        <div class="text-right flex flex-col justify-center border-l pl-3 border-slate-100">
+            <span id="reloj" class="font-black text-slate-800 text-lg leading-none">00:00</span>
+            <span id="fecha" class="text-[8px] font-bold text-slate-400 uppercase mt-1">---</span>
+        </div>
     </div>
 
-    <div id="barra-alerta" class="max-w-md mx-auto rounded-[2.5rem] p-8 mb-6 card-shadow text-white relative overflow-hidden">
-        <span class="text-[10px] font-bold uppercase opacity-80 tracking-wider">Estado del Servicio</span>
-        <h2 id="texto-alerta" class="text-xl font-black italic uppercase mt-1 leading-tight tracking-tight">
-            Verificando...
+    <div id="container-promo" class="max-w-md mx-auto mb-4 hidden">
+        <img id="promo-img" src="" class="w-full rounded-3xl shadow-lg object-cover max-h-48" alt="Promoción">
+    </div>
+
+    <div id="barra-alerta" class="max-w-md mx-auto rounded-3xl p-5 mb-4 card-shadow text-white">
+        <span class="text-[9px] font-bold uppercase opacity-80 tracking-widest block mb-1">Estado General</span>
+        <h2 id="texto-alerta" class="text-lg font-black italic uppercase leading-none tracking-tight">
+            ---
         </h2>
     </div>
 
-    <div id="lista-servicios" class="max-w-md mx-auto space-y-3">
+    <div id="lista-servicios" class="max-w-md mx-auto space-y-2">
         </div>
 
     <script type="module">
@@ -50,43 +56,55 @@
         const urlParams = new URLSearchParams(window.location.search);
         const userUID = urlParams.get('id');
 
-        // Reloj en tiempo real
-        setInterval(() => {
+        // Reloj y Fecha
+        function actualizarReloj() {
             const ahora = new Date();
             document.getElementById('reloj').innerText = ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false});
-        }, 1000);
+            const opciones = { day: 'numeric', month: 'short', year: 'numeric' };
+            document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-ES', opciones);
+        }
+        setInterval(actualizarReloj, 1000);
+        actualizarReloj();
 
         if (userUID) {
             onValue(ref(db, 'usuarios/' + userUID), (snapshot) => {
                 if (snapshot.exists()) {
                     const d = snapshot.val();
-                    const c = d.config?.colores || { primario: "#059669", secundario: "#f0fdf4", acento: "#059669" };
+                    const c = d.config?.colores || { primario: "#1e293b", secundario: "#f8fafc", acento: "#ef4444" };
 
+                    // Textos principales
                     document.getElementById('nombre-empresa').innerText = d.config?.nombre || "";
                     document.getElementById('sede-empresa').innerText = d.config?.ubi || "";
                     document.getElementById('texto-alerta').innerText = d.mensaje?.texto || "";
                     
-                    // Logo
-                    const imgLogo = document.getElementById('logo-img');
-                    if(d.config?.logo) { imgLogo.src = d.config.logo; imgLogo.classList.remove('hidden'); }
+                    // Logo e Imagen Promo
+                    if(d.config?.logo) { 
+                        const imgL = document.getElementById('logo-img');
+                        imgL.src = d.config.logo; imgL.classList.remove('hidden'); 
+                    }
+                    if(d.config?.promo) { 
+                        const imgP = document.getElementById('promo-img');
+                        imgP.src = d.config.promo; 
+                        document.getElementById('container-promo').classList.remove('hidden'); 
+                    }
 
                     // Colores
                     document.getElementById('barra-alerta').style.backgroundColor = c.acento;
                     document.body.style.backgroundColor = c.secundario;
 
-                    // Lista de Servicios estilo Megabús
+                    // Lista de Servicios
                     const lista = document.getElementById('lista-servicios');
                     lista.innerHTML = "";
                     (d.lista?.items || []).forEach(item => {
                         const [nom, est] = item.split(':');
                         const card = document.createElement('div');
-                        card.className = "bg-white p-4 rounded-[2rem] flex justify-between items-center card-shadow border border-slate-50";
+                        card.className = "bg-white p-4 rounded-2xl flex justify-between items-center card-shadow";
                         card.innerHTML = `
                             <div class="flex items-center gap-3">
-                                <span class="text-2xl">🚌</span>
-                                <span class="font-bold text-slate-700 uppercase text-sm">${nom.trim()}</span>
+                                <div class="w-2 h-2 rounded-full" style="background-color:${c.primario}"></div>
+                                <span class="font-bold text-slate-700 uppercase text-[11px] tracking-tight">${nom.trim()}</span>
                             </div>
-                            <span class="px-4 py-2 rounded-full font-black text-[10px] uppercase" style="background-color:${c.primario}20; color:${c.primario}">
+                            <span class="px-3 py-1 rounded-lg font-black text-[10px] uppercase" style="background-color:${c.primario}15; color:${c.primario}">
                                 ${est ? est.trim() : '---'}
                             </span>
                         `;

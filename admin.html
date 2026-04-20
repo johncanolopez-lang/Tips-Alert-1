@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Tips Alert</title>
+    <title>Admin Premium - Tips Alert</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -21,19 +21,40 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
         let userUID = "";
-        let lB64 = "", pB64 = "";
+        let files = { logo: "", img1: "", img2: "", img3: "" };
 
         onAuthStateChanged(auth, (u) => {
-            if(u) {
-                userUID = u.uid;
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('admin-panel').classList.remove('hidden');
-                cargarDatos();
-            } else {
-                document.getElementById('auth-screen').classList.remove('hidden');
-                document.getElementById('admin-panel').classList.add('hidden');
-            }
+            if(u) { userUID = u.uid; cargarDatos(); document.getElementById('admin-panel').classList.remove('hidden'); }
+            else { document.getElementById('auth-screen').classList.remove('hidden'); }
         });
+
+        const conv = f => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
+        window.upFile = async (e, key) => { files[key] = await conv(e.target.files[0]); alert(key + " cargada"); };
+
+        window.guardar = () => {
+            set(ref(db, 'usuarios/' + userUID), {
+                config: { 
+                    nombre: document.getElementById('nom').value, 
+                    ubi: document.getElementById('ub').value,
+                    logo: files.logo, 
+                    img1: files.img1, desc1: document.getElementById('d1').value,
+                    img2: files.img2, desc2: document.getElementById('d2').value,
+                    img3: files.img3, desc3: document.getElementById('d3').value,
+                    video: document.getElementById('vid').value
+                },
+                mensaje: { texto: document.getElementById('ale').value },
+                lista: { items: document.getElementById('ite').value.split('\n').filter(x => x.trim()) }
+            }).then(() => {
+                alert("✅ Sincronizado");
+                actualizarQR();
+            });
+        };
+
+        function actualizarQR() {
+            const link = `https://johncanolopez-lang.github.io/Tips-Alert-1/index.html?id=${userUID}`;
+            document.getElementById('qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
+            document.getElementById('btn-wa').onclick = () => window.open(`https://wa.me/?text=${encodeURIComponent("Estado del servicio: " + link)}`);
+        }
 
         async function cargarDatos() {
             const s = await get(ref(db, 'usuarios/' + userUID));
@@ -43,64 +64,56 @@
                 document.getElementById('ub').value = d.config?.ubi || "";
                 document.getElementById('ale').value = d.mensaje?.texto || "";
                 document.getElementById('ite').value = (d.lista?.items || []).join('\n');
-                lB64 = d.config?.logo || "";
-                pB64 = d.config?.promo || "";
+                document.getElementById('vid').value = d.config?.video || "";
+                files = { logo: d.config?.logo||"", img1: d.config?.img1||"", img2: d.config?.img2||"", img3: d.config?.img3||"" };
             }
-            actualizarEnlace();
+            actualizarQR();
         }
-
-        function actualizarEnlace() {
-            const link = `https://johncanolopez-lang.github.io/Tips-Alert-1/index.html?id=${userUID}`;
-            document.getElementById('qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
-            document.getElementById('btn-compartir').onclick = () => {
-                const texto = `Estado del servicio: ${link}`;
-                window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
-            };
-        }
-
-        const conv = f => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
-        window.upL = async (e) => { lB64 = await conv(e.target.files[0]); alert("Logo cargado"); };
-        window.upP = async (e) => { pB64 = await conv(e.target.files[0]); alert("Imagen promo cargada"); };
-
-        window.guardar = () => {
-            set(ref(db, 'usuarios/' + userUID), {
-                config: { 
-                    nombre: document.getElementById('nom').value, ubi: document.getElementById('ub').value,
-                    logo: lB64, promo: pB64
-                },
-                mensaje: { texto: document.getElementById('ale').value },
-                lista: { items: document.getElementById('ite').value.split('\n').filter(x => x.trim()) }
-            }).then(() => alert("✅ Sincronizado"));
-        };
-
         window.manejarAuth = () => signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('pass').value);
-        window.salir = () => signOut(auth);
     </script>
 </head>
 <body class="bg-slate-100 p-4 font-sans flex flex-col items-center">
-    <div id="auth-screen" class="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl mt-10">
-        <input id="email" type="email" placeholder="Correo" class="w-full p-4 mb-4 border rounded-2xl">
-        <input id="pass" type="password" placeholder="Clave" class="w-full p-4 mb-4 border rounded-2xl">
-        <button onclick="manejarAuth()" class="w-full bg-slate-900 text-white py-4 rounded-full font-black">ENTRAR</button>
+    <div id="auth-screen" class="hidden max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl mt-10">
+        <input id="email" type="email" placeholder="Correo" class="w-full p-4 mb-4 border rounded-2xl outline-none">
+        <input id="pass" type="password" placeholder="Clave" class="w-full p-4 mb-6 border rounded-2xl outline-none">
+        <button onclick="manejarAuth()" class="w-full bg-black text-white py-4 rounded-full font-black">ENTRAR</button>
     </div>
 
     <div id="admin-panel" class="hidden w-full max-w-2xl space-y-4">
         <div class="bg-white p-8 rounded-[3rem] shadow-xl space-y-4">
             <div class="grid grid-cols-2 gap-4">
-                <input id="nom" type="text" placeholder="Empresa" class="p-4 bg-slate-50 border rounded-2xl font-bold">
-                <input id="ub" type="text" placeholder="Sede" class="p-4 bg-slate-50 border rounded-2xl font-bold">
+                <input id="nom" type="text" placeholder="Nombre Empresa" class="p-4 bg-slate-50 border rounded-2xl font-bold italic">
+                <input id="ub" type="text" placeholder="Ciudad / Sede" class="p-4 bg-slate-50 border rounded-2xl font-bold">
             </div>
-            <div class="grid grid-cols-2 gap-4">
-                <label class="bg-slate-800 text-white p-4 rounded-2xl text-center text-[10px] font-black cursor-pointer uppercase">Cargar Logo<input type="file" class="hidden" onchange="upL(event)"></label>
-                <label class="bg-indigo-400 text-white p-4 rounded-2xl text-center text-[10px] font-black cursor-pointer uppercase">Imagen Promo<input type="file" class="hidden" onchange="upP(event)"></label>
+            
+            <div class="p-4 border-2 border-dashed rounded-3xl space-y-2">
+                <p class="text-[10px] font-black uppercase text-center opacity-40">Multimedia y Logo</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="bg-slate-800 text-white p-3 rounded-xl text-center text-[9px] font-bold cursor-pointer uppercase">Logo Principal<input type="file" class="hidden" onchange="upFile(event, 'logo')"></label>
+                    <label class="bg-indigo-500 text-white p-3 rounded-xl text-center text-[9px] font-bold cursor-pointer uppercase">Imagen 1<input type="file" class="hidden" onchange="upFile(event, 'img1')"></label>
+                    <label class="bg-indigo-500 text-white p-3 rounded-xl text-center text-[9px] font-bold cursor-pointer uppercase">Imagen 2<input type="file" class="hidden" onchange="upFile(event, 'img2')"></label>
+                    <label class="bg-indigo-500 text-white p-3 rounded-xl text-center text-[9px] font-bold cursor-pointer uppercase">Imagen 3<input type="file" class="hidden" onchange="upFile(event, 'img3')"></label>
+                </div>
+                <div class="grid grid-cols-3 gap-1">
+                    <input id="d1" type="text" placeholder="Desc 1" class="text-[9px] p-2 border rounded-lg">
+                    <input id="d2" type="text" placeholder="Desc 2" class="text-[9px] p-2 border rounded-lg">
+                    <input id="d3" type="text" placeholder="Desc 3" class="text-[9px] p-2 border rounded-lg">
+                </div>
             </div>
-            <input id="ale" type="text" placeholder="ALERTA" class="w-full p-4 bg-red-50 text-red-600 font-black rounded-2xl text-center">
+
+            <div class="bg-yellow-50 p-4 rounded-3xl border border-yellow-200">
+                <p class="text-[10px] font-black uppercase mb-1">Espacio Premium (Video YouTube ID)</p>
+                <input id="vid" type="text" placeholder="Ej: dQw4w9WgXcQ" class="w-full p-3 rounded-xl border">
+            </div>
+
+            <input id="ale" type="text" placeholder="TEXTO DE ALERTA" class="w-full p-4 bg-red-600 text-white font-black rounded-2xl text-center">
             <textarea id="ite" placeholder="Servicio : Estado" class="w-full p-4 bg-slate-50 border rounded-2xl h-32"></textarea>
-            <button onclick="guardar()" class="w-full bg-indigo-600 text-white py-6 rounded-full font-black uppercase shadow-xl">Sincronizar Todo</button>
+            
+            <button onclick="guardar()" class="w-full bg-blue-600 text-white py-6 rounded-full font-black uppercase shadow-xl">Sincronizar Todo</button>
         </div>
         <div class="bg-slate-900 p-8 rounded-[3rem] text-center">
-            <img id="qr" class="mx-auto bg-white p-4 rounded-2xl mb-4 shadow-2xl">
-            <button id="btn-compartir" class="bg-green-500 text-white px-8 py-4 rounded-full font-black uppercase text-xs">Compartir WhatsApp</button>
+            <img id="qr" class="mx-auto bg-white p-4 rounded-2xl mb-4">
+            <button id="btn-wa" class="bg-green-500 text-white px-8 py-4 rounded-full font-black uppercase text-xs">Enviar por WhatsApp</button>
         </div>
     </div>
 </body>

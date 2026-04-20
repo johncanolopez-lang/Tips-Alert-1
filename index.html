@@ -3,45 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tips Alert</title>
+    <title>Visualizador - Tips Alert</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
         .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 15s linear infinite; }
-        
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .cascade-item { animation: slideUp 0.5s ease forwards; opacity: 0; }
-        
-        body { transition: background 0.5s ease; }
+        .base-text { font-size: 14px; font-weight: 800; text-transform: uppercase; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .modal img { max-width: 100%; border-radius: 20px; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen p-4 font-sans overflow-x-hidden">
+<body class="bg-white min-h-screen font-sans overflow-x-hidden">
 
-    <canvas id="colorCanvas" class="hidden"></canvas>
+    <canvas id="canvas" class="hidden"></canvas>
+    
+    <div id="modal" class="modal" onclick="this.style.display='none'">
+        <img id="modal-img" src="">
+        <p id="modal-desc" class="text-white mt-4 font-bold text-center"></p>
+    </div>
 
-    <div class="max-w-md mx-auto bg-white rounded-3xl p-4 mb-4 flex justify-between items-center shadow-md">
-        <div class="flex items-center gap-3 overflow-hidden">
-            <img id="logo-img" src="" class="h-10 hidden" crossorigin="anonymous">
-            <div class="overflow-hidden">
-                <h1 id="nombre-empresa" class="font-black text-sm uppercase animate-marquee">Cargando...</h1>
-                <p id="sede-empresa" class="text-[9px] font-bold text-slate-400"></p>
-            </div>
+    <div class="p-4 flex flex-col items-center border-b border-slate-100">
+        <img id="logo" src="" class="h-24 w-auto object-contain mb-2 hidden" crossorigin="anonymous">
+        <div class="w-full overflow-hidden mb-1">
+            <h1 id="nom-emp" class="text-2xl font-black italic animate-marquee">CARGANDO...</h1>
         </div>
-        <div class="text-right pl-3 border-l">
-            <span id="reloj" class="font-black text-lg block">00:00</span>
-            <span id="fecha" class="text-[8px] font-bold text-slate-400 uppercase">---</span>
+        <div class="flex justify-between w-full px-2 text-slate-400 base-text">
+            <span id="ciudad">---</span>
+            <span id="reloj-fecha">---</span>
         </div>
     </div>
 
-    <div id="container-promo" class="max-w-md mx-auto mb-4 hidden">
-        <img id="promo-img" src="" class="w-full rounded-3xl shadow-lg">
+    <div class="flex justify-around p-4 gap-2">
+        <div onclick="verImg(1)" class="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-200"><img id="i1" class="w-full h-full object-cover"></div>
+        <div onclick="verImg(2)" class="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-200"><img id="i2" class="w-full h-full object-cover"></div>
+        <div onclick="verImg(3)" class="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-200"><img id="i3" class="w-full h-full object-cover"></div>
     </div>
 
-    <div id="barra-alerta" class="max-w-md mx-auto rounded-3xl p-6 mb-4 text-white shadow-lg">
-        <h2 id="texto-alerta" class="text-xl font-black italic uppercase italic">---</h2>
+    <div class="px-4 py-2">
+        <div class="bg-white border-2 border-red-600 rounded-2xl p-4 text-center">
+            <p id="alerta" class="text-red-600 base-text tracking-tighter">---</p>
+        </div>
     </div>
 
-    <div id="lista-servicios" class="max-w-md mx-auto space-y-3"></div>
+    <div id="premium-video" class="px-4 mb-4 hidden">
+        <div class="aspect-video w-full rounded-3xl overflow-hidden shadow-xl">
+            <iframe id="yt-player" class="w-full h-full" src="" frameborder="0" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <div id="servicios" class="p-4 space-y-2"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -57,68 +67,69 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const urlParams = new URLSearchParams(window.location.search);
-        const userUID = urlParams.get('id');
+        const id = urlParams.get('id');
 
-        // LÓGICA DE COLORES AUTOMÁTICOS
-        function extractColors(imgElement) {
-            const canvas = document.getElementById('colorCanvas');
+        let dataGlobal = {};
+
+        function getBranding(img) {
+            const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = imgElement.naturalWidth;
-            canvas.height = imgElement.naturalHeight;
-            ctx.drawImage(imgElement, 0, 0);
-            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-            
+            canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+            ctx.drawImage(img, 0, 0);
+            const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
             let r=0, g=0, b=0, count=0;
-            for(let i=0; i<data.length; i+=20) {
-                if(data[i+3] > 128) { r+=data[i]; g+=data[i+1]; b+=data[i+2]; count++; }
-            }
-            const cp = `rgb(${Math.round(r/count)},${Math.round(g/count)},${Math.round(b/count)})`;
-            return { cp, ca: cp, cs: `rgba(${Math.round(r/count)},${Math.round(g/count)},${Math.round(b/count)}, 0.1)` };
+            for(let i=0; i<d.length; i+=40) { if(d[i+3]>128) { r+=d[i]; g+=d[i+1]; b+=d[i+2]; count++; } }
+            const color = `rgb(${Math.round(r/count)},${Math.round(g/count)},${Math.round(b/count)})`;
+            return { cp: color, cs: color + "15" };
         }
 
         function updateTime() {
             const n = new Date();
-            document.getElementById('reloj').innerText = n.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-            document.getElementById('fecha').innerText = n.toLocaleDateString('es-ES', {day:'numeric', month:'short'});
+            const f = n.toLocaleDateString('en-GB').split('/').join(' / ');
+            const h = n.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12: false});
+            document.getElementById('reloj-fecha').innerText = `${h}  ${f}`;
         }
-        setInterval(updateTime, 1000); updateTime();
+        setInterval(updateTime, 1000);
 
-        if(userUID) {
-            onValue(ref(db, 'usuarios/' + userUID), (s) => {
-                const d = s.val();
-                document.getElementById('nombre-empresa').innerText = d.config.nombre;
-                document.getElementById('sede-empresa').innerText = d.config.ubi;
-                document.getElementById('texto-alerta').innerText = d.mensaje.texto;
+        window.verImg = (n) => {
+            const m = document.getElementById('modal');
+            m.style.display = 'flex';
+            document.getElementById('modal-img').src = dataGlobal.config['img'+n];
+            document.getElementById('modal-desc').innerText = dataGlobal.config['desc'+n];
+        };
+
+        if(id) {
+            onValue(ref(db, 'usuarios/' + id), (s) => {
+                const d = s.val(); dataGlobal = d;
+                document.getElementById('nom-emp').innerText = d.config.nombre;
+                document.getElementById('ciudad').innerText = d.config.ubi;
+                document.getElementById('alerta').innerText = d.mensaje.texto;
                 
-                const logo = document.getElementById('logo-img');
+                const logo = document.getElementById('logo');
                 if(d.config.logo) {
-                    logo.src = d.config.logo;
-                    logo.classList.remove('hidden');
+                    logo.src = d.config.logo; logo.classList.remove('hidden');
                     logo.onload = () => {
-                        const colors = extractColors(logo);
-                        document.getElementById('nombre-empresa').style.color = colors.cp;
-                        document.getElementById('barra-alerta').style.backgroundColor = colors.ca;
-                        document.body.style.backgroundColor = colors.cs;
-                        
-                        // Renderizar servicios con cascada
-                        const lista = document.getElementById('lista-servicios');
-                        lista.innerHTML = "";
-                        d.lista.items.forEach((item, index) => {
-                            const [n, e] = item.split(':');
-                            const div = document.createElement('div');
-                            div.className = "bg-white p-5 rounded-[2rem] flex justify-between items-center shadow-sm cascade-item";
-                            div.style.animationDelay = `${index * 0.1}s`;
-                            div.style.borderLeft = `8px solid ${colors.cp}`;
-                            div.innerHTML = `<span class="font-bold text-xs uppercase">${n}</span><span class="font-black text-xs" style="color:${colors.cp}">${e}</span>`;
-                            lista.appendChild(div);
-                        });
+                        const brand = getBranding(logo);
+                        document.getElementById('nom-emp').style.color = brand.cp;
+                        document.body.style.backgroundColor = brand.cs;
                     };
                 }
-                
-                if(d.config.promo) {
-                    document.getElementById('promo-img').src = d.config.promo;
-                    document.getElementById('container-promo').classList.remove('hidden');
+
+                if(d.config.video) {
+                    document.getElementById('yt-player').src = `https://www.youtube.com/embed/${d.config.video}`;
+                    document.getElementById('premium-video').classList.remove('hidden');
                 }
+
+                ['i1','i2','i3'].forEach(k => { if(d.config[k.replace('i','img')]) document.getElementById(k).src = d.config[k.replace('i','img')]; });
+
+                const list = document.getElementById('servicios'); list.innerHTML = "";
+                d.lista.items.forEach(i => {
+                    const [n, e] = i.split(':');
+                    const div = document.createElement('div');
+                    div.className = "bg-white p-4 rounded-2xl shadow-sm flex justify-between base-text text-slate-700 border-l-8 border-slate-800";
+                    div.innerHTML = `<span>${n}</span><span class="opacity-50 italic">${e}</span>`;
+                    list.appendChild(div);
+                });
             });
         }
     </script>

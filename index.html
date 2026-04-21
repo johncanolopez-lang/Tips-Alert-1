@@ -18,7 +18,7 @@
     <div id="modal" class="modal" onclick="this.style.display='none'"><img id="modal-img" class="rounded-3xl max-w-full"><p id="modal-desc" class="text-white mt-4 font-bold text-center"></p></div>
 
     <div class="w-full bg-white py-2 flex justify-center border-b shadow-sm sticky top-0 z-40">
-        <img src="https://johncanolopez-lang.github.io/Tips-Alert-1/logo_tips.jpg" class="h-10 w-auto" alt="Tips Alert">
+        <img src="logo_tips.jpg" class="h-10 w-auto" alt="Tips Alert" onerror="this.src='https://johncanolopez-lang.github.io/Tips-Alert-1/logo_tips.jpg'">
     </div>
 
     <div class="p-4 mx-auto max-w-md">
@@ -37,9 +37,9 @@
     </div>
 
     <div class="flex justify-center p-2 gap-4">
-        <div onclick="verImg(1)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100"><img id="i1" class="w-full h-full object-cover"></div>
-        <div onclick="verImg(2)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100"><img id="i2" class="w-full h-full object-cover"></div>
-        <div onclick="verImg(3)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100"><img id="i3" class="w-full h-full object-cover"></div>
+        <div onclick="verImg(1)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100 cursor-pointer"><img id="i1" class="w-full h-full object-cover"></div>
+        <div onclick="verImg(2)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100 cursor-pointer"><img id="i2" class="w-full h-full object-cover"></div>
+        <div onclick="verImg(3)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100 cursor-pointer"><img id="i3" class="w-full h-full object-cover"></div>
     </div>
 
     <div class="px-4 py-2 max-w-md mx-auto">
@@ -48,8 +48,8 @@
         </div>
     </div>
 
-    <div id="premium-video" class="px-4 mb-4 hidden max-w-[200px] mx-auto">
-        <div class="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200">
+    <div id="premium-video" class="px-4 mb-4 hidden max-w-[220px] mx-auto">
+        <div class="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 bg-black">
             <iframe id="yt-player" class="w-full h-full" src="" frameborder="0" allowfullscreen></iframe>
         </div>
     </div>
@@ -93,20 +93,24 @@
         setInterval(updateTime, 1000); updateTime();
 
         window.verImg = (n) => {
-            const m = document.getElementById('modal'); m.style.display = 'flex';
-            document.getElementById('modal-img').src = dataGlobal.config['img'+n];
-            document.getElementById('modal-desc').innerText = dataGlobal.config['desc'+n];
+            const m = document.getElementById('modal'); 
+            const imgSrc = dataGlobal.config['img'+n];
+            if(!imgSrc) return;
+            m.style.display = 'flex';
+            document.getElementById('modal-img').src = imgSrc;
+            document.getElementById('modal-desc').innerText = dataGlobal.config['desc'+n] || "";
         };
 
         if(id) {
             onValue(ref(db, 'usuarios/' + id), (s) => {
+                if(!s.exists()) return;
                 const d = s.val(); dataGlobal = d;
-                document.getElementById('nom-emp').innerText = d.config.nombre;
-                document.getElementById('ciudad').innerText = d.config.ubi;
-                document.getElementById('alerta').innerText = d.mensaje.texto;
+                document.getElementById('nom-emp').innerText = d.config?.nombre || "";
+                document.getElementById('ciudad').innerText = d.config?.ubi || "";
+                document.getElementById('alerta').innerText = d.mensaje?.texto || "";
                 
                 const logo = document.getElementById('logo-emp');
-                if(d.config.logo) {
+                if(d.config?.logo) {
                     logo.src = d.config.logo; logo.classList.remove('hidden');
                     logo.onload = () => {
                         const brand = getBranding(logo);
@@ -115,19 +119,27 @@
                     };
                 }
 
-                if(d.config.video) {
+                if(d.config?.video) {
                     document.getElementById('yt-player').src = `https://www.youtube.com/embed/${d.config.video}`;
                     document.getElementById('premium-video').classList.remove('hidden');
                 }
 
-                ['i1','i2','i3'].forEach(k => { if(d.config[k.replace('i','img')]) document.getElementById(k).src = d.config[k.replace('i','img')]; });
+                ['i1','i2','i3'].forEach(k => { 
+                    const imgUrl = d.config[k.replace('i','img')];
+                    if(imgUrl) {
+                        document.getElementById(k).src = imgUrl;
+                        document.getElementById(k).parentElement.classList.remove('hidden');
+                    } else {
+                        document.getElementById(k).parentElement.classList.add('hidden');
+                    }
+                });
 
                 const list = document.getElementById('servicios'); list.innerHTML = "";
-                d.lista.items.forEach(i => {
+                (d.lista?.items || []).forEach(i => {
                     const [n, e] = i.split(':');
                     const div = document.createElement('div');
                     div.className = "bg-white p-4 rounded-2xl shadow-sm flex justify-between base-text text-slate-700 border-l-8 border-slate-800";
-                    div.innerHTML = `<span>${n}</span><span class="opacity-50 italic">${e}</span>`;
+                    div.innerHTML = `<span>${n}</span><span class="opacity-50 italic">${e || ''}</span>`;
                     list.appendChild(div);
                 });
             });

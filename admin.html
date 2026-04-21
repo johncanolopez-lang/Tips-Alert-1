@@ -29,7 +29,7 @@
         });
 
         const conv = f => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
-        window.upFile = async (e, key) => { files[key] = await conv(e.target.files[0]); alert("Cargado"); };
+        window.upFile = async (e, key) => { files[key] = await conv(e.target.files[0]); alert("Imagen " + key + " cargada"); };
 
         window.guardar = () => {
             set(ref(db, 'usuarios/' + userUID), {
@@ -42,15 +42,14 @@
                 },
                 mensaje: { texto: document.getElementById('ale').value },
                 lista: { items: document.getElementById('ite').value.split('\n').filter(x => x.trim()) }
-            }).then(() => { alert("✅ Guardado"); actualizarQR(); });
+            }).then(() => { alert("✅ Sincronizado"); actualizarQR(); });
         };
 
         function actualizarQR() {
             const link = `https://johncanolopez-lang.github.io/Tips-Alert-1/index.html?id=${userUID}`;
             document.getElementById('qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
             document.getElementById('btn-wa').onclick = () => {
-                const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent("🔔 *Tips Alert*: Consulta nuestro estado actual aquí: " + link)}`;
-                window.open(waUrl, '_blank');
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent("🔔 Tips Alert: Estado actual aquí: " + link)}`, '_blank');
             };
         }
 
@@ -74,36 +73,46 @@
     <div id="auth-screen" class="hidden max-w-md w-full bg-white p-8 rounded-3xl shadow-xl mt-10">
         <input id="email" type="email" placeholder="Email" class="w-full p-4 mb-4 border rounded-xl">
         <input id="pass" type="password" placeholder="Password" class="w-full p-4 mb-6 border rounded-xl">
-        <button onclick="manejarAuth()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold">LOGIN</button>
+        <button onclick="manejarAuth()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold uppercase">Entrar al Panel</button>
     </div>
 
-    <div id="admin-panel" class="hidden w-full max-w-md space-y-4">
-        <div class="bg-white p-6 rounded-3xl shadow-lg space-y-3">
-            <input id="nom" type="text" placeholder="Nombre Empresa" class="w-full p-3 border rounded-xl font-bold italic">
-            <input id="ub" type="text" placeholder="Ciudad" class="w-full p-3 border rounded-xl">
-            
-            <div class="grid grid-cols-2 gap-2 text-[10px]">
-                <label class="bg-black text-white p-2 rounded-lg cursor-pointer text-center">LOGO EMPRESA<input type="file" class="hidden" onchange="upFile(event, 'logo')"></label>
-                <label class="bg-blue-500 text-white p-2 rounded-lg cursor-pointer text-center">IMG CÍRCULO 1<input type="file" class="hidden" onchange="upFile(event, 'img1')"></label>
-                <label class="bg-blue-500 text-white p-2 rounded-lg cursor-pointer text-center">IMG CÍRCULO 2<input type="file" class="hidden" onchange="upFile(event, 'img2')"></label>
-                <label class="bg-blue-500 text-white p-2 rounded-lg cursor-pointer text-center">IMG CÍRCULO 3<input type="file" class="hidden" onchange="upFile(event, 'img3')"></label>
+    <div id="admin-panel" class="hidden w-full max-w-md space-y-4 pb-10">
+        <div class="bg-white p-6 rounded-[2.5rem] shadow-lg space-y-4">
+            <h2 class="text-center font-black text-slate-300 uppercase text-xs">Configuración de Empresa</h2>
+            <div class="grid grid-cols-2 gap-2">
+                <input id="nom" type="text" placeholder="Nombre Empresa" class="p-3 border rounded-xl font-bold">
+                <input id="ub" type="text" placeholder="Ciudad" class="p-3 border rounded-xl font-bold">
             </div>
             
-            <input id="d1" type="text" placeholder="Descripción 1" class="w-full p-2 border rounded-lg text-xs">
-            <input id="d2" type="text" placeholder="Descripción 2" class="w-full p-2 border rounded-lg text-xs">
-            <input id="d3" type="text" placeholder="Descripción 3" class="w-full p-2 border rounded-lg text-xs">
+            <div class="grid grid-cols-2 gap-2">
+                <label class="bg-black text-white p-3 rounded-xl text-[9px] font-black cursor-pointer text-center uppercase">Logo Empresa<input type="file" class="hidden" onchange="upFile(event, 'logo')"></label>
+                <label class="bg-blue-600 text-white p-3 rounded-xl text-[9px] font-black cursor-pointer text-center uppercase">Img Círculo 1<input type="file" class="hidden" onchange="upFile(event, 'img1')"></label>
+                <label class="bg-blue-600 text-white p-3 rounded-xl text-[9px] font-black cursor-pointer text-center uppercase">Img Círculo 2<input type="file" class="hidden" onchange="upFile(event, 'img2')"></label>
+                <label class="bg-blue-600 text-white p-3 rounded-xl text-[9px] font-black cursor-pointer text-center uppercase">Img Círculo 3<input type="file" class="hidden" onchange="upFile(event, 'img3')"></label>
+            </div>
             
-            <input id="ad_text" type="text" placeholder="TEXTO ANUNCIO PREMIUM" class="w-full p-3 bg-yellow-50 border border-yellow-300 rounded-xl">
-            <input id="ale" type="text" placeholder="TEXTO ALERTA" class="w-full p-3 border-2 border-red-500 text-red-600 rounded-xl font-black">
+            <div class="space-y-1">
+                <input id="d1" type="text" placeholder="Desc 1" class="w-full p-2 border rounded-lg text-[10px]">
+                <input id="d2" type="text" placeholder="Desc 2" class="w-full p-2 border rounded-lg text-[10px]">
+                <input id="d3" type="text" placeholder="Desc 3" class="w-full p-2 border rounded-lg text-[10px]">
+            </div>
+
+            <hr>
+            <h2 class="text-center font-black text-slate-300 uppercase text-xs">Anuncios y Alertas</h2>
+            <input id="ad_text" type="text" placeholder="TEXTO ANUNCIO PREMIUM" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 font-bold">
+            <input id="ale" type="text" placeholder="TEXTO ALERTA" class="w-full p-3 border-2 border-red-500 text-red-600 rounded-xl font-black uppercase">
             
-            <textarea id="ite" placeholder="Servicio : Estado : Link" class="w-full p-3 border rounded-xl h-32 text-xs"></textarea>
+            <hr>
+            <h2 class="text-center font-black text-slate-300 uppercase text-xs">Servicios (Nombre:Estado:Link)</h2>
+            <p class="text-[9px] text-slate-400 italic">Ejemplo: Ruta 20 : NORMAL : https://web.com</p>
+            <textarea id="ite" placeholder="Ruta 1 : NORMAL : http://link.com" class="w-full p-3 border rounded-xl h-40 text-xs font-mono bg-slate-50"></textarea>
             
-            <button onclick="guardar()" class="w-full bg-green-600 text-white py-4 rounded-full font-black uppercase">Sincronizar</button>
+            <button onclick="guardar()" class="w-full bg-green-600 text-white py-5 rounded-full font-black uppercase shadow-lg">Sincronizar Todo</button>
         </div>
         
-        <div class="bg-slate-900 p-6 rounded-3xl text-center">
-            <img id="qr" class="mx-auto bg-white p-3 rounded-xl mb-4 w-40">
-            <button id="btn-wa" class="bg-green-500 text-white px-6 py-3 rounded-full font-bold text-sm uppercase">Enviar WhatsApp</button>
+        <div class="bg-slate-900 p-8 rounded-[2.5rem] text-center">
+            <img id="qr" class="mx-auto bg-white p-3 rounded-2xl mb-4 w-40">
+            <button id="btn-wa" class="bg-green-500 text-white px-8 py-4 rounded-full font-black uppercase text-xs">Compartir WhatsApp</button>
         </div>
     </div>
 </body>

@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Tips Alert</title>
+    <title>Admin Premium - Tips Alert</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -29,7 +29,7 @@
         });
 
         const conv = f => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
-        window.upFile = async (e, key) => { files[key] = await conv(e.target.files[0]); alert(key + " cargada"); };
+        window.upFile = async (e, key) => { files[key] = await conv(e.target.files[0]); alert("Cargado"); };
 
         window.guardar = () => {
             set(ref(db, 'usuarios/' + userUID), {
@@ -38,17 +38,20 @@
                     logo: files.logo, img1: files.img1, desc1: document.getElementById('d1').value,
                     img2: files.img2, desc2: document.getElementById('d2').value,
                     img3: files.img3, desc3: document.getElementById('d3').value,
-                    video: document.getElementById('vid').value
+                    ad: document.getElementById('ad_text').value
                 },
                 mensaje: { texto: document.getElementById('ale').value },
                 lista: { items: document.getElementById('ite').value.split('\n').filter(x => x.trim()) }
-            }).then(() => { alert("✅ Sincronizado"); actualizarQR(); });
+            }).then(() => { alert("✅ Guardado"); actualizarQR(); });
         };
 
         function actualizarQR() {
             const link = `https://johncanolopez-lang.github.io/Tips-Alert-1/index.html?id=${userUID}`;
             document.getElementById('qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
-            document.getElementById('btn-wa').onclick = () => window.open(`https://wa.me/?text=${encodeURIComponent("Estado: " + link)}`);
+            document.getElementById('btn-wa').onclick = () => {
+                const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent("🔔 *Tips Alert*: Consulta nuestro estado actual aquí: " + link)}`;
+                window.open(waUrl, '_blank');
+            };
         }
 
         async function cargarDatos() {
@@ -58,8 +61,8 @@
                 document.getElementById('nom').value = d.config?.nombre || "";
                 document.getElementById('ub').value = d.config?.ubi || "";
                 document.getElementById('ale').value = d.mensaje?.texto || "";
+                document.getElementById('ad_text').value = d.config?.ad || "";
                 document.getElementById('ite').value = (d.lista?.items || []).join('\n');
-                document.getElementById('vid').value = d.config?.video || "";
                 files = { logo: d.config?.logo||"", img1: d.config?.img1||"", img2: d.config?.img2||"", img3: d.config?.img3||"" };
             }
             actualizarQR();
@@ -67,38 +70,40 @@
         window.manejarAuth = () => signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('pass').value);
     </script>
 </head>
-<body class="bg-slate-100 p-4 font-sans flex flex-col items-center">
-    <div id="auth-screen" class="hidden max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl mt-10">
-        <input id="email" type="email" placeholder="Correo" class="w-full p-4 mb-4 border rounded-2xl">
-        <input id="pass" type="password" placeholder="Clave" class="w-full p-4 mb-6 border rounded-2xl">
-        <button onclick="manejarAuth()" class="w-full bg-black text-white py-4 rounded-full font-black">ENTRAR</button>
+<body class="bg-slate-50 p-4 font-sans flex flex-col items-center">
+    <div id="auth-screen" class="hidden max-w-md w-full bg-white p-8 rounded-3xl shadow-xl mt-10">
+        <input id="email" type="email" placeholder="Email" class="w-full p-4 mb-4 border rounded-xl">
+        <input id="pass" type="password" placeholder="Password" class="w-full p-4 mb-6 border rounded-xl">
+        <button onclick="manejarAuth()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold">LOGIN</button>
     </div>
 
-    <div id="admin-panel" class="hidden w-full max-w-2xl space-y-4">
-        <div class="bg-white p-8 rounded-[3rem] shadow-xl space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-                <input id="nom" type="text" placeholder="Empresa" class="p-4 bg-slate-50 border rounded-2xl font-bold">
-                <input id="ub" type="text" placeholder="Ciudad" class="p-4 bg-slate-50 border rounded-2xl font-bold">
+    <div id="admin-panel" class="hidden w-full max-w-md space-y-4">
+        <div class="bg-white p-6 rounded-3xl shadow-lg space-y-3">
+            <input id="nom" type="text" placeholder="Nombre Empresa" class="w-full p-3 border rounded-xl font-bold italic">
+            <input id="ub" type="text" placeholder="Ciudad" class="w-full p-3 border rounded-xl">
+            
+            <div class="grid grid-cols-2 gap-2 text-[10px]">
+                <label class="bg-black text-white p-2 rounded-lg cursor-pointer text-center">LOGO EMPRESA<input type="file" class="hidden" onchange="upFile(event, 'logo')"></label>
+                <label class="bg-blue-500 text-white p-2 rounded-lg cursor-pointer text-center">IMG CÍRCULO 1<input type="file" class="hidden" onchange="upFile(event, 'img1')"></label>
+                <label class="bg-blue-500 text-white p-2 rounded-lg cursor-pointer text-center">IMG CÍRCULO 2<input type="file" class="hidden" onchange="upFile(event, 'img2')"></label>
+                <label class="bg-blue-500 text-white p-2 rounded-lg cursor-pointer text-center">IMG CÍRCULO 3<input type="file" class="hidden" onchange="upFile(event, 'img3')"></label>
             </div>
-            <div class="grid grid-cols-2 gap-2">
-                <label class="bg-slate-800 text-white p-3 rounded-xl text-center text-[9px] font-bold cursor-pointer">Logo<input type="file" class="hidden" onchange="upFile(event, 'logo')"></label>
-                <label class="bg-indigo-500 text-white p-3 rounded-xl text-center text-[9px] font-bold cursor-pointer">Img 1<input type="file" class="hidden" onchange="upFile(event, 'img1')"></label>
-                <label class="bg-indigo-500 text-white p-3 rounded-xl text-center text-[9px] font-bold cursor-pointer">Img 2<input type="file" class="hidden" onchange="upFile(event, 'img2')"></label>
-                <label class="bg-indigo-500 text-white p-3 rounded-xl text-center text-[9px] font-bold cursor-pointer">Img 3<input type="file" class="hidden" onchange="upFile(event, 'img3')"></label>
-            </div>
-            <div class="grid grid-cols-3 gap-1">
-                <input id="d1" type="text" placeholder="Desc 1" class="text-[9px] p-2 border rounded-lg">
-                <input id="d2" type="text" placeholder="Desc 2" class="text-[9px] p-2 border rounded-lg">
-                <input id="d3" type="text" placeholder="Desc 3" class="text-[9px] p-2 border rounded-lg">
-            </div>
-            <input id="vid" type="text" placeholder="ID Video YouTube" class="w-full p-3 rounded-xl border bg-yellow-50">
-            <input id="ale" type="text" placeholder="ALERTA" class="w-full p-4 bg-red-600 text-white font-black rounded-2xl text-center">
-            <textarea id="ite" placeholder="Servicio : Estado" class="w-full p-4 bg-slate-50 border rounded-2xl h-32"></textarea>
-            <button onclick="guardar()" class="w-full bg-blue-600 text-white py-5 rounded-full font-black uppercase">Sincronizar</button>
+            
+            <input id="d1" type="text" placeholder="Descripción 1" class="w-full p-2 border rounded-lg text-xs">
+            <input id="d2" type="text" placeholder="Descripción 2" class="w-full p-2 border rounded-lg text-xs">
+            <input id="d3" type="text" placeholder="Descripción 3" class="w-full p-2 border rounded-lg text-xs">
+            
+            <input id="ad_text" type="text" placeholder="TEXTO ANUNCIO PREMIUM" class="w-full p-3 bg-yellow-50 border border-yellow-300 rounded-xl">
+            <input id="ale" type="text" placeholder="TEXTO ALERTA" class="w-full p-3 border-2 border-red-500 text-red-600 rounded-xl font-black">
+            
+            <textarea id="ite" placeholder="Servicio : Estado : Link" class="w-full p-3 border rounded-xl h-32 text-xs"></textarea>
+            
+            <button onclick="guardar()" class="w-full bg-green-600 text-white py-4 rounded-full font-black uppercase">Sincronizar</button>
         </div>
-        <div class="bg-slate-900 p-8 rounded-[3rem] text-center">
-            <img id="qr" class="mx-auto bg-white p-4 rounded-2xl mb-4 w-48">
-            <button id="btn-wa" class="bg-green-500 text-white px-8 py-4 rounded-full font-black uppercase text-xs">WhatsApp</button>
+        
+        <div class="bg-slate-900 p-6 rounded-3xl text-center">
+            <img id="qr" class="mx-auto bg-white p-3 rounded-xl mb-4 w-40">
+            <button id="btn-wa" class="bg-green-500 text-white px-6 py-3 rounded-full font-bold text-sm uppercase">Enviar WhatsApp</button>
         </div>
     </div>
 </body>

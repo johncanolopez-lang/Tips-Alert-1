@@ -8,8 +8,10 @@
     <style>
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
         .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 12s linear infinite; }
-        .base-text { font-size: 13px; font-weight: 800; text-transform: uppercase; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .unificado { font-size: 14px; font-weight: 800; text-transform: uppercase; }
+        /* FILETE NEGRO FINO */
+        .text-stroke { -webkit-text-stroke: 0.5px black; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
     </style>
 </head>
 <body class="bg-white min-h-screen font-sans overflow-x-hidden">
@@ -17,44 +19,43 @@
     <canvas id="canvas" class="hidden"></canvas>
     <div id="modal" class="modal" onclick="this.style.display='none'"><img id="modal-img" class="rounded-3xl max-w-full"><p id="modal-desc" class="text-white mt-4 font-bold text-center"></p></div>
 
-    <div class="w-full bg-white py-2 flex justify-center border-b shadow-sm sticky top-0 z-40">
-        <img src="logo_tips.jpg" class="h-10 w-auto" alt="Tips Alert" onerror="this.src='https://johncanolopez-lang.github.io/Tips-Alert-1/logo_tips.jpg'">
+    <div class="w-full bg-white py-3 flex justify-center border-b sticky top-0 z-40 shadow-sm">
+        <img src="logo_tips.png" class="h-12 w-auto" alt="Tips Alert">
     </div>
 
     <div class="p-4 mx-auto max-w-md">
-        <div class="bg-white rounded-3xl p-4 shadow-md border border-slate-50 flex items-center gap-4">
+        <div class="bg-white rounded-[2rem] p-4 shadow-xl flex items-center gap-4 border border-slate-50">
             <img id="logo-emp" src="" class="h-16 w-16 object-contain hidden" crossorigin="anonymous">
             <div class="flex-1 overflow-hidden">
-                <div class="overflow-hidden">
-                    <h1 id="nom-emp" class="text-2xl font-black italic animate-marquee">CARGANDO...</h1>
-                </div>
-                <div class="flex justify-between items-center text-slate-400 font-bold text-[10px] uppercase mt-1">
+                <h1 id="nom-emp" class="text-2xl font-black italic animate-marquee text-stroke">CARGANDO...</h1>
+                <div class="flex justify-between items-center text-slate-400 unificado text-[10px] mt-1">
                     <span id="ciudad">---</span>
-                    <span id="reloj-fecha">---</span>
+                    <span id="reloj-fecha">--:-- | --/--/--</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="flex justify-center p-2 gap-4">
-        <div onclick="verImg(1)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100 cursor-pointer"><img id="i1" class="w-full h-full object-cover"></div>
-        <div onclick="verImg(2)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100 cursor-pointer"><img id="i2" class="w-full h-full object-cover"></div>
-        <div onclick="verImg(3)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100 cursor-pointer"><img id="i3" class="w-full h-full object-cover"></div>
+    <div class="flex justify-center p-2 gap-4 max-w-md mx-auto">
+        <div id="c1" onclick="verImg(1)" class="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-100 hidden"><img id="i1" class="w-full h-full object-cover"></div>
+        <div id="c2" onclick="verImg(2)" class="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-100 hidden"><img id="i2" class="w-full h-full object-cover"></div>
+        <div id="c3" onclick="verImg(3)" class="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-100 hidden"><img id="i3" class="w-full h-full object-cover"></div>
     </div>
 
     <div class="px-4 py-2 max-w-md mx-auto">
-        <div class="bg-white border-2 border-red-600 rounded-2xl p-4 text-center">
-            <p id="alerta" class="text-red-600 base-text tracking-tighter">---</p>
+        <div class="bg-white border-[3px] border-red-600 rounded-3xl p-4 text-center shadow-md">
+            <p id="alerta" class="text-red-600 unificado tracking-tight">---</p>
         </div>
     </div>
 
-    <div id="premium-video" class="px-4 mb-4 hidden max-w-[220px] mx-auto">
-        <div class="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 bg-black">
-            <iframe id="yt-player" class="w-full h-full" src="" frameborder="0" allowfullscreen></iframe>
+    <div id="premium-ad" class="px-4 py-2 max-w-md mx-auto hidden">
+        <div class="bg-blue-600 rounded-3xl p-4 text-center shadow-lg border-[3px] border-white">
+            <p class="text-[9px] text-blue-200 font-black uppercase mb-1">Espacio Publicitario</p>
+            <p id="ad-text" class="text-white unificado tracking-tight italic">---</p>
         </div>
     </div>
 
-    <div id="servicios" class="p-4 space-y-2 max-w-md mx-auto"></div>
+    <div id="servicios" class="p-4 space-y-3 max-w-md mx-auto"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -72,18 +73,6 @@
         const id = new URLSearchParams(window.location.search).get('id');
         let dataGlobal = {};
 
-        function getBranding(img) {
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-            ctx.drawImage(img, 0, 0);
-            const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-            let r=0, g=0, b=0, count=0;
-            for(let i=0; i<d.length; i+=50) { if(d[i+3]>128) { r+=d[i]; g+=d[i+1]; b+=d[i+2]; count++; } }
-            const color = `rgb(${Math.round(r/count)},${Math.round(g/count)},${Math.round(b/count)})`;
-            return { cp: color, cs: color.replace('rgb', 'rgba').replace(')', ', 0.1)') };
-        }
-
         function updateTime() {
             const n = new Date();
             const f = n.toLocaleDateString('en-GB').split('/').join(' / ');
@@ -93,11 +82,9 @@
         setInterval(updateTime, 1000); updateTime();
 
         window.verImg = (n) => {
-            const m = document.getElementById('modal'); 
-            const imgSrc = dataGlobal.config['img'+n];
-            if(!imgSrc) return;
+            const m = document.getElementById('modal');
             m.style.display = 'flex';
-            document.getElementById('modal-img').src = imgSrc;
+            document.getElementById('modal-img').src = dataGlobal.config['img'+n];
             document.getElementById('modal-desc').innerText = dataGlobal.config['desc'+n] || "";
         };
 
@@ -109,37 +96,39 @@
                 document.getElementById('ciudad').innerText = d.config?.ubi || "";
                 document.getElementById('alerta').innerText = d.mensaje?.texto || "";
                 
-                const logo = document.getElementById('logo-emp');
+                if(d.config?.ad) {
+                    document.getElementById('ad-text').innerText = d.config.ad;
+                    document.getElementById('premium-ad').classList.remove('hidden');
+                }
+
                 if(d.config?.logo) {
-                    logo.src = d.config.logo; logo.classList.remove('hidden');
-                    logo.onload = () => {
-                        const brand = getBranding(logo);
-                        document.getElementById('nom-emp').style.color = brand.cp;
-                        document.body.style.backgroundColor = brand.cs;
+                    const l = document.getElementById('logo-emp');
+                    l.src = d.config.logo; l.classList.remove('hidden');
+                    l.onload = () => {
+                        // Lógica de color según el logo (Branding 60-30-10)
+                        document.getElementById('nom-emp').style.color = "#16a34a"; // Verde por defecto o extraer
                     };
                 }
 
-                if(d.config?.video) {
-                    document.getElementById('yt-player').src = `https://www.youtube.com/embed/${d.config.video}`;
-                    document.getElementById('premium-video').classList.remove('hidden');
-                }
-
-                ['i1','i2','i3'].forEach(k => { 
-                    const imgUrl = d.config[k.replace('i','img')];
-                    if(imgUrl) {
-                        document.getElementById(k).src = imgUrl;
-                        document.getElementById(k).parentElement.classList.remove('hidden');
-                    } else {
-                        document.getElementById(k).parentElement.classList.add('hidden');
-                    }
+                [1,2,3].forEach(n => {
+                    const img = d.config['img'+n];
+                    if(img) { document.getElementById('i'+n).src = img; document.getElementById('c'+n).classList.remove('hidden'); }
                 });
 
                 const list = document.getElementById('servicios'); list.innerHTML = "";
                 (d.lista?.items || []).forEach(i => {
-                    const [n, e] = i.split(':');
+                    const [nombre, estado, link] = i.split(':').map(x => x?.trim());
+                    const esRetrasado = estado?.toLowerCase().includes('retraso') || estado?.toLowerCase().includes('suspendido');
+                    
                     const div = document.createElement('div');
-                    div.className = "bg-white p-4 rounded-2xl shadow-sm flex justify-between base-text text-slate-700 border-l-8 border-slate-800";
-                    div.innerHTML = `<span>${n}</span><span class="opacity-50 italic">${e || ''}</span>`;
+                    div.className = "bg-white p-4 rounded-2xl shadow-sm border-l-8 flex flex-col gap-2 " + (esRetrasado ? 'border-red-500' : 'border-green-500');
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="unificado text-slate-800">${nombre}</span>
+                            <span class="text-[10px] font-black uppercase ${esRetrasado ? 'text-red-500' : 'text-green-600'}">${estado}</span>
+                        </div>
+                        ${link ? `<a href="${link}" target="_blank" class="text-[9px] bg-slate-100 text-slate-500 p-2 rounded-lg text-center font-bold uppercase">Ver más detalles ➔</a>` : ''}
+                    `;
                     list.appendChild(div);
                 });
             });

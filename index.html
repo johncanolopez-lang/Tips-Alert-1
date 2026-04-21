@@ -3,55 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizador - Tips Alert</title>
+    <title>Tips Alert</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-        .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 15s linear infinite; }
-        .base-text { font-size: 14px; font-weight: 800; text-transform: uppercase; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
-        .modal img { max-width: 100%; border-radius: 20px; }
+        .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 12s linear infinite; }
+        .base-text { font-size: 13px; font-weight: 800; text-transform: uppercase; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
     </style>
 </head>
 <body class="bg-white min-h-screen font-sans overflow-x-hidden">
 
     <canvas id="canvas" class="hidden"></canvas>
-    
-    <div id="modal" class="modal" onclick="this.style.display='none'">
-        <img id="modal-img" src="">
-        <p id="modal-desc" class="text-white mt-4 font-bold text-center"></p>
+    <div id="modal" class="modal" onclick="this.style.display='none'"><img id="modal-img" class="rounded-3xl max-w-full"><p id="modal-desc" class="text-white mt-4 font-bold text-center"></p></div>
+
+    <div class="w-full bg-white py-2 flex justify-center border-b shadow-sm sticky top-0 z-40">
+        <img src="https://johncanolopez-lang.github.io/Tips-Alert-1/logo_tips.jpg" class="h-10 w-auto" alt="Tips Alert">
     </div>
 
-    <div class="p-4 flex flex-col items-center border-b border-slate-100">
-        <img id="logo" src="" class="h-24 w-auto object-contain mb-2 hidden" crossorigin="anonymous">
-        <div class="w-full overflow-hidden mb-1">
-            <h1 id="nom-emp" class="text-2xl font-black italic animate-marquee">CARGANDO...</h1>
+    <div class="p-4 mx-auto max-w-md">
+        <div class="bg-white rounded-3xl p-4 shadow-md border border-slate-50 flex items-center gap-4">
+            <img id="logo-emp" src="" class="h-16 w-16 object-contain hidden" crossorigin="anonymous">
+            <div class="flex-1 overflow-hidden">
+                <div class="overflow-hidden">
+                    <h1 id="nom-emp" class="text-2xl font-black italic animate-marquee">CARGANDO...</h1>
+                </div>
+                <div class="flex justify-between items-center text-slate-400 font-bold text-[10px] uppercase mt-1">
+                    <span id="ciudad">---</span>
+                    <span id="reloj-fecha">---</span>
+                </div>
+            </div>
         </div>
-        <div class="flex justify-between w-full px-2 text-slate-400 base-text">
-            <span id="ciudad">---</span>
-            <span id="reloj-fecha">---</span>
-        </div>
     </div>
 
-    <div class="flex justify-around p-4 gap-2">
-        <div onclick="verImg(1)" class="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-200"><img id="i1" class="w-full h-full object-cover"></div>
-        <div onclick="verImg(2)" class="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-200"><img id="i2" class="w-full h-full object-cover"></div>
-        <div onclick="verImg(3)" class="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-200"><img id="i3" class="w-full h-full object-cover"></div>
+    <div class="flex justify-center p-2 gap-4">
+        <div onclick="verImg(1)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100"><img id="i1" class="w-full h-full object-cover"></div>
+        <div onclick="verImg(2)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100"><img id="i2" class="w-full h-full object-cover"></div>
+        <div onclick="verImg(3)" class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100"><img id="i3" class="w-full h-full object-cover"></div>
     </div>
 
-    <div class="px-4 py-2">
+    <div class="px-4 py-2 max-w-md mx-auto">
         <div class="bg-white border-2 border-red-600 rounded-2xl p-4 text-center">
             <p id="alerta" class="text-red-600 base-text tracking-tighter">---</p>
         </div>
     </div>
 
-    <div id="premium-video" class="px-4 mb-4 hidden">
-        <div class="aspect-video w-full rounded-3xl overflow-hidden shadow-xl">
+    <div id="premium-video" class="px-4 mb-4 hidden max-w-[200px] mx-auto">
+        <div class="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200">
             <iframe id="yt-player" class="w-full h-full" src="" frameborder="0" allowfullscreen></iframe>
         </div>
     </div>
 
-    <div id="servicios" class="p-4 space-y-2"></div>
+    <div id="servicios" class="p-4 space-y-2 max-w-md mx-auto"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -66,9 +69,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const urlParams = new URLSearchParams(window.location.search);
-        const id = urlParams.get('id');
-
+        const id = new URLSearchParams(window.location.search).get('id');
         let dataGlobal = {};
 
         function getBranding(img) {
@@ -78,22 +79,21 @@
             ctx.drawImage(img, 0, 0);
             const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
             let r=0, g=0, b=0, count=0;
-            for(let i=0; i<d.length; i+=40) { if(d[i+3]>128) { r+=d[i]; g+=d[i+1]; b+=d[i+2]; count++; } }
+            for(let i=0; i<d.length; i+=50) { if(d[i+3]>128) { r+=d[i]; g+=d[i+1]; b+=d[i+2]; count++; } }
             const color = `rgb(${Math.round(r/count)},${Math.round(g/count)},${Math.round(b/count)})`;
-            return { cp: color, cs: color + "15" };
+            return { cp: color, cs: color.replace('rgb', 'rgba').replace(')', ', 0.1)') };
         }
 
         function updateTime() {
             const n = new Date();
             const f = n.toLocaleDateString('en-GB').split('/').join(' / ');
             const h = n.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12: false});
-            document.getElementById('reloj-fecha').innerText = `${h}  ${f}`;
+            document.getElementById('reloj-fecha').innerText = `${h} | ${f}`;
         }
-        setInterval(updateTime, 1000);
+        setInterval(updateTime, 1000); updateTime();
 
         window.verImg = (n) => {
-            const m = document.getElementById('modal');
-            m.style.display = 'flex';
+            const m = document.getElementById('modal'); m.style.display = 'flex';
             document.getElementById('modal-img').src = dataGlobal.config['img'+n];
             document.getElementById('modal-desc').innerText = dataGlobal.config['desc'+n];
         };
@@ -105,7 +105,7 @@
                 document.getElementById('ciudad').innerText = d.config.ubi;
                 document.getElementById('alerta').innerText = d.mensaje.texto;
                 
-                const logo = document.getElementById('logo');
+                const logo = document.getElementById('logo-emp');
                 if(d.config.logo) {
                     logo.src = d.config.logo; logo.classList.remove('hidden');
                     logo.onload = () => {

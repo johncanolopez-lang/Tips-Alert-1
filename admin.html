@@ -29,7 +29,7 @@
         });
 
         const conv = f => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
-        window.upFile = async (e, key) => { files[key] = await conv(e.target.files[0]); alert("Imagen " + key + " cargada"); };
+        window.upFile = async (e, key) => { files[key] = await conv(e.target.files[0]); alert("Imagen " + key + " lista."); };
 
         window.guardar = () => {
             set(ref(db, 'usuarios/' + userUID), {
@@ -42,14 +42,14 @@
                 },
                 mensaje: { texto: document.getElementById('ale').value },
                 lista: { items: document.getElementById('ite').value.split('\n').filter(x => x.trim()) }
-            }).then(() => { alert("✅ Sincronizado"); actualizarQR(); });
+            }).then(() => { alert("✅ Sincronizado con Éxito"); actualizarQR(); });
         };
 
         function actualizarQR() {
             const link = `https://johncanolopez-lang.github.io/Tips-Alert-1/index.html?id=${userUID}`;
             document.getElementById('qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
             document.getElementById('btn-wa').onclick = () => {
-                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent("🔔 Tips Alert: Estado actual aquí: " + link)}`, '_blank');
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent("🔔 Tips Alert: Consulta nuestro estado actual aquí: " + link)}`, '_blank');
             };
         }
 
@@ -62,6 +62,9 @@
                 document.getElementById('ale').value = d.mensaje?.texto || "";
                 document.getElementById('ad_text').value = d.config?.ad || "";
                 document.getElementById('ite').value = (d.lista?.items || []).join('\n');
+                document.getElementById('d1').value = d.config?.desc1 || "";
+                document.getElementById('d2').value = d.config?.desc2 || "";
+                document.getElementById('d3').value = d.config?.desc3 || "";
                 files = { logo: d.config?.logo||"", img1: d.config?.img1||"", img2: d.config?.img2||"", img3: d.config?.img3||"" };
             }
             actualizarQR();
@@ -69,19 +72,19 @@
         window.manejarAuth = () => signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('pass').value);
     </script>
 </head>
-<body class="bg-slate-50 p-4 font-sans flex flex-col items-center">
-    <div id="auth-screen" class="hidden max-w-md w-full bg-white p-8 rounded-3xl shadow-xl mt-10">
-        <input id="email" type="email" placeholder="Email" class="w-full p-4 mb-4 border rounded-xl">
-        <input id="pass" type="password" placeholder="Password" class="w-full p-4 mb-6 border rounded-xl">
-        <button onclick="manejarAuth()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold uppercase">Entrar al Panel</button>
+<body class="bg-slate-100 p-4 font-sans flex flex-col items-center">
+    <div id="auth-screen" class="hidden max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl mt-10">
+        <h2 class="text-center font-black text-slate-400 uppercase mb-6">Acceso Administrador</h2>
+        <input id="email" type="email" placeholder="Correo" class="w-full p-4 mb-4 border rounded-2xl outline-none">
+        <input id="pass" type="password" placeholder="Clave" class="w-full p-4 mb-6 border rounded-2xl outline-none">
+        <button onclick="manejarAuth()" class="w-full bg-blue-600 text-white py-4 rounded-full font-black uppercase tracking-widest shadow-lg">Entrar</button>
     </div>
 
-    <div id="admin-panel" class="hidden w-full max-w-md space-y-4 pb-10">
-        <div class="bg-white p-6 rounded-[2.5rem] shadow-lg space-y-4">
-            <h2 class="text-center font-black text-slate-300 uppercase text-xs">Configuración de Empresa</h2>
+    <div id="admin-panel" class="hidden w-full max-w-md space-y-4 pb-20">
+        <div class="bg-white p-6 rounded-[2.5rem] shadow-xl space-y-4 border border-slate-200">
             <div class="grid grid-cols-2 gap-2">
-                <input id="nom" type="text" placeholder="Nombre Empresa" class="p-3 border rounded-xl font-bold">
-                <input id="ub" type="text" placeholder="Ciudad" class="p-3 border rounded-xl font-bold">
+                <input id="nom" type="text" placeholder="Empresa" class="p-3 bg-slate-50 border rounded-xl font-bold">
+                <input id="ub" type="text" placeholder="Ciudad" class="p-3 bg-slate-50 border rounded-xl font-bold">
             </div>
             
             <div class="grid grid-cols-2 gap-2">
@@ -97,22 +100,17 @@
                 <input id="d3" type="text" placeholder="Desc 3" class="w-full p-2 border rounded-lg text-[10px]">
             </div>
 
-            <hr>
-            <h2 class="text-center font-black text-slate-300 uppercase text-xs">Anuncios y Alertas</h2>
-            <input id="ad_text" type="text" placeholder="TEXTO ANUNCIO PREMIUM" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 font-bold">
-            <input id="ale" type="text" placeholder="TEXTO ALERTA" class="w-full p-3 border-2 border-red-500 text-red-600 rounded-xl font-black uppercase">
+            <input id="ad_text" type="text" placeholder="TEXTO ANUNCIO PREMIUM" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 font-bold italic">
+            <input id="ale" type="text" placeholder="MENSAJE DE ALERTA" class="w-full p-3 border-2 border-red-500 text-red-600 rounded-xl font-black uppercase text-center">
             
-            <hr>
-            <h2 class="text-center font-black text-slate-300 uppercase text-xs">Servicios (Nombre:Estado:Link)</h2>
-            <p class="text-[9px] text-slate-400 italic">Ejemplo: Ruta 20 : NORMAL : https://web.com</p>
-            <textarea id="ite" placeholder="Ruta 1 : NORMAL : http://link.com" class="w-full p-3 border rounded-xl h-40 text-xs font-mono bg-slate-50"></textarea>
+            <textarea id="ite" placeholder="Ruta : NORMAL : http://link.com" class="w-full p-4 bg-slate-50 border rounded-xl h-40 text-xs font-mono"></textarea>
             
-            <button onclick="guardar()" class="w-full bg-green-600 text-white py-5 rounded-full font-black uppercase shadow-lg">Sincronizar Todo</button>
+            <button onclick="guardar()" class="w-full bg-green-600 text-white py-5 rounded-full font-black uppercase shadow-xl">Guardar Cambios</button>
         </div>
         
-        <div class="bg-slate-900 p-8 rounded-[2.5rem] text-center">
-            <img id="qr" class="mx-auto bg-white p-3 rounded-2xl mb-4 w-40">
-            <button id="btn-wa" class="bg-green-500 text-white px-8 py-4 rounded-full font-black uppercase text-xs">Compartir WhatsApp</button>
+        <div class="bg-slate-900 p-8 rounded-[2.5rem] text-center shadow-2xl">
+            <img id="qr" class="mx-auto bg-white p-3 rounded-2xl mb-6 w-44">
+            <button id="btn-wa" class="bg-green-500 text-white px-10 py-4 rounded-full font-black uppercase text-xs shadow-lg">Enviar por WhatsApp</button>
         </div>
     </div>
 </body>

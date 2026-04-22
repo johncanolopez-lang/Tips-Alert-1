@@ -10,14 +10,18 @@
         .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 12s linear infinite; }
         .text-stroke { -webkit-text-stroke: 1.5px black; paint-order: stroke fill; }
         
-        /* Efecto Lupa para las imágenes */
-        .zoom-img { transition: all 0.3s ease; cursor: zoom-in; }
-        .zoom-img:active { 
-            transform: scale(2.5); 
+        /* ZOOM TIPO LUPA: Crece sin mover el resto de elementos */
+        .zoom-box { position: relative; width: 80px; height: 80px; z-index: 10; }
+        .zoom-box img { 
+            width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer; border: 4px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .zoom-box img:active { 
+            transform: scale(2.8); 
             z-index: 100; 
-            position: relative; 
-            border-radius: 15px; 
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            border-radius: 12px; 
+            box-shadow: 0 20px 25px rgba(0,0,0,0.4);
         }
     </style>
 </head>
@@ -36,36 +40,29 @@
                     <h1 id="nom-emp" class="text-3xl font-black italic animate-marquee text-stroke uppercase">Cargando...</h1>
                 </div>
             </div>
-            
             <div class="flex justify-between items-center px-1 font-black text-slate-700 text-[11px] uppercase tracking-tighter">
-                <span id="ciudad">---</span>
+                <span id="ciudad">PEREIRA - D/DAS</span>
                 <span id="reloj-fecha">--:-- | -- / -- / --</span>
             </div>
         </div>
 
         <div class="flex justify-around items-start p-2 gap-2">
             <div id="c1" class="hidden flex flex-col items-center w-28 text-center">
-                <div class="w-20 h-20 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white zoom-img">
-                    <img id="i1" class="w-full h-full object-cover">
-                </div>
+                <div class="zoom-box"><img id="i1"></div>
                 <span id="t1" class="text-[9px] font-black uppercase text-slate-500 mt-2 leading-tight"></span>
             </div>
             <div id="c2" class="hidden flex flex-col items-center w-28 text-center">
-                <div class="w-20 h-20 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white zoom-img">
-                    <img id="i2" class="w-full h-full object-cover">
-                </div>
+                <div class="zoom-box"><img id="i2"></div>
                 <span id="t2" class="text-[9px] font-black uppercase text-slate-500 mt-2 leading-tight"></span>
             </div>
             <div id="c3" class="hidden flex flex-col items-center w-28 text-center">
-                <div class="w-20 h-20 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white zoom-img">
-                    <img id="i3" class="w-full h-full object-cover">
-                </div>
+                <div class="zoom-box"><img id="i3"></div>
                 <span id="t3" class="text-[9px] font-black uppercase text-slate-500 mt-2 leading-tight"></span>
             </div>
         </div>
 
         <div class="bg-white border-[3px] border-red-600 rounded-[2rem] p-5 text-center shadow-xl">
-            <p id="alerta" class="text-red-600 font-black uppercase text-sm italic tracking-tight">OPERACIÓN ACTUAL</p>
+            <p id="alerta" class="text-red-600 font-black uppercase text-sm italic tracking-tight italic">ESTADO DEL SERVICIO</p>
         </div>
 
         <div id="servicios" class="space-y-4 pb-12"></div>
@@ -92,8 +89,8 @@
         const db = getDatabase(app);
         const id = new URLSearchParams(window.location.search).get('id');
 
-        // FUNCIÓN: Extrae color y fuerza el verde si es el dominante
-        function getAutoColor(img) {
+        // Función para extraer color dominante (Verde por defecto)
+        function aplicarColorAuto(img) {
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = img.naturalWidth;
@@ -104,17 +101,17 @@
             for(let i=0; i<data.length; i+=100) {
                 if(data[i+3] > 150) { r += data[i]; g += data[i+1]; b += data[i+2]; count++; }
             }
-            // Retorna el color detectado (ideal para Megabús que es verde)
-            return count > 0 ? `rgb(${Math.round(r/count)}, ${Math.round(g/count)}, ${Math.round(b/count)})` : '#00A82D';
+            const color = count > 0 ? `rgb(${Math.round(r/count)}, ${Math.round(g/count)}, ${Math.round(b/count)})` : '#00A82D';
+            document.getElementById('nom-emp').style.color = color;
         }
 
-        function clock() {
+        function updateClock() {
             const now = new Date();
-            const dateStr = now.toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, ' / ');
-            const timeStr = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12: false});
-            document.getElementById('reloj-fecha').innerText = `${timeStr} | ${dateStr}`;
+            const d = now.toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, ' / ');
+            const t = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12: false});
+            document.getElementById('reloj-fecha').innerText = `${t} | ${d}`;
         }
-        setInterval(clock, 1000); clock();
+        setInterval(updateClock, 1000); updateClock();
 
         if(id) {
             onValue(ref(db, 'usuarios/' + id), (snap) => {
@@ -122,14 +119,14 @@
                 if(!d) return;
 
                 document.getElementById('nom-emp').innerText = d.config?.nombre || "EMPRESA";
-                document.getElementById('ciudad').innerText = d.config?.ubi || "CIUDAD";
-                document.getElementById('alerta').innerText = d.mensaje?.texto || "SIN NOVEDADES";
+                document.getElementById('ciudad').innerText = d.config?.ubi || "PEREIRA - D/DAS";
+                document.getElementById('alerta').innerText = d.mensaje?.texto || "OPERACIÓN NORMAL";
 
                 if(d.config?.logo) {
                     const l = document.getElementById('logo-emp');
                     l.src = d.config.logo;
                     l.classList.remove('hidden');
-                    l.onload = () => { document.getElementById('nom-emp').style.color = getAutoColor(l); };
+                    l.onload = () => aplicarColorAuto(l);
                 }
 
                 [1,2,3].forEach(n => {
@@ -144,28 +141,8 @@
                 list.innerHTML = "";
                 (d.lista?.items || []).forEach(item => {
                     const [nombre, estado, link] = item.split(':').map(s => s?.trim());
-                    
-                    // LÓGICA DE COLORES POR ESTADO
                     const esRetraso = estado?.toUpperCase().includes('RETRASO') || estado?.toUpperCase().includes('RETRASADA');
                     const esNormal = estado?.toUpperCase().includes('NORMAL') || estado?.toUpperCase().includes('DESPACHADA');
                     
-                    let colorTexto = "text-slate-600"; // Color por defecto
-                    if(esRetraso) colorTexto = "text-red-600";
-                    if(esNormal) colorTexto = "text-green-600";
-
                     const div = document.createElement('div');
-                    div.className = `bg-white p-5 rounded-[2.5rem] shadow-xl border-l-[12px] flex flex-col gap-4 ${esRetraso ? 'border-red-600' : 'border-green-600'}`;
-                    div.innerHTML = `
-                        ${link ? `<a href="${link}" target="_blank" class="w-full bg-[#0F172A] text-white py-4 rounded-2xl text-center font-black uppercase text-[12px] shadow-lg tracking-wider">Ruta Alimentadora ➔</a>` : ''}
-                        <div class="flex justify-between items-center px-1">
-                            <span class="font-black text-slate-800 text-[14px] uppercase">${nombre}</span>
-                            <span class="font-black ${colorTexto} text-[13px] uppercase">${estado}</span>
-                        </div>
-                    `;
-                    list.appendChild(div);
-                });
-            });
-        }
-    </script>
-</body>
-</html>
+                    div.className = `bg-white p-5 rounded-[2.5rem] shadow-xl border-l-[12px] flex flex-col gap-4 ${esRetraso ? 'border-red-600' : 'border-green

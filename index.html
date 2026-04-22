@@ -7,62 +7,72 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-        .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 12s linear infinite; }
-        .unificado { font-size: 14px; font-weight: 800; text-transform: uppercase; }
-        /* CORRECCIÓN DE COLOR: El fill (color logo) se pinta SOBRE el stroke (borde negro) */
-        .text-stroke { -webkit-text-stroke: 1.5px black; paint-order: stroke fill; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 10s linear infinite; }
+        /* FILETE NEGRO Y COLOR VERDE PRIORITARIO */
+        .text-stroke { 
+            -webkit-text-stroke: 1.5px black; 
+            paint-order: stroke fill; 
+            color: #00A82D !important; /* Verde Megabús */
+        }
     </style>
 </head>
-<body class="bg-white min-h-screen font-sans overflow-x-hidden transition-colors duration-500">
+<body class="bg-white min-h-screen font-sans">
 
-    <canvas id="canvas" class="hidden"></canvas>
-    <div id="modal" class="modal" onclick="this.style.display='none'"><img id="modal-img" class="rounded-3xl max-w-full shadow-2xl border-4 border-white"></div>
-
-    <div class="w-full bg-white py-3 flex justify-center border-b sticky top-0 z-40 shadow-sm">
-        <img src="logo_tips.jpg" class="h-10 w-auto object-contain" alt="Tips Alert" onerror="this.src='https://johncanolopez-lang.github.io/Tips-Alert-1/logo_tips.jpg'">
+    <div class="w-full bg-white py-2 flex justify-center border-b sticky top-0 z-50">
+        <img src="logo_tips.jpg" class="w-full max-w-md px-4 h-14 object-fill" onerror="this.src='https://johncanolopez-lang.github.io/Tips-Alert-1/logo_tips.jpg'">
     </div>
 
-    <div class="p-4 mx-auto max-w-md">
-        <div class="bg-white rounded-[2.5rem] p-5 shadow-2xl border border-slate-50">
+    <div class="p-4 mx-auto max-w-md space-y-4">
+        <div class="bg-white rounded-[2.5rem] p-5 shadow-2xl border border-slate-100">
             <div class="flex items-center gap-4 mb-4">
-                <div class="w-16 h-16 flex-shrink-0 flex items-center justify-center">
-                    <img id="logo-emp" src="" class="max-h-full max-w-full object-contain hidden" crossorigin="anonymous">
-                </div>
-                <div class="flex-1 overflow-hidden border-b border-slate-100 pb-1">
+                <img id="logo-emp" src="" class="h-16 w-16 object-contain hidden">
+                <div class="flex-1 overflow-hidden border-b-2 border-slate-100 pb-1">
                     <h1 id="nom-emp" class="text-3xl font-black italic animate-marquee text-stroke">...</h1>
                 </div>
             </div>
-            
-            <div class="flex justify-between items-center px-1">
+            <div class="flex justify-between items-start">
                 <div class="flex flex-col">
-                    <span class="text-[8px] text-slate-400 font-black uppercase tracking-widest">Ubicación</span>
-                    <span id="ciudad" class="text-[11px] font-black text-slate-700 uppercase">---</span>
+                    <span class="text-[9px] text-slate-400 font-black uppercase">Ubicación</span>
+                    <span id="ciudad" class="text-[12px] font-black text-slate-800 uppercase">---</span>
                 </div>
-                <div class="flex flex-col text-right border-l border-slate-200 pl-4">
-                    <span class="text-[8px] text-slate-400 font-black uppercase tracking-widest">Fecha y Hora</span>
-                    <span id="reloj-fecha" class="text-[11px] font-black text-slate-700 uppercase tracking-tighter">--:-- | --/--/--</span>
+                <div class="flex flex-col text-right">
+                    <span class="text-[9px] text-slate-400 font-black uppercase">Fecha y Hora</span>
+                    <span id="reloj" class="text-[12px] font-black text-slate-800">--:-- | --/--/--</span>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="flex justify-center p-2 gap-4 max-w-md mx-auto">
-        <div id="c1" onclick="verImg(1)" class="w-20 h-20 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-100 hidden cursor-pointer"><img id="i1" class="w-full h-full object-cover"></div>
-        <div id="c2" onclick="verImg(2)" class="w-20 h-20 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-100 hidden cursor-pointer"><img id="i2" class="w-full h-full object-cover"></div>
-        <div id="c3" onclick="verImg(3)" class="w-20 h-20 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-100 hidden cursor-pointer"><img id="i3" class="w-full h-full object-cover"></div>
-    </div>
-
-    <div class="px-4 py-2 max-w-md mx-auto space-y-3">
-        <div class="bg-white border-[3px] border-red-600 rounded-3xl p-5 text-center shadow-sm">
-            <p id="alerta" class="text-red-600 unificado">SIN NOVEDADES</p>
+        <div class="flex justify-around items-start">
+            <div id="c1" class="hidden flex flex-col items-center w-24">
+                <div class="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-50">
+                    <img id="i1" class="w-full h-full object-cover">
+                </div>
+                <span id="t1" class="text-[10px] font-bold text-center mt-2 uppercase text-slate-600"></span>
+            </div>
+            <div id="c2" class="hidden flex flex-col items-center w-24">
+                <div class="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-50">
+                    <img id="i2" class="w-full h-full object-cover">
+                </div>
+                <span id="t2" class="text-[10px] font-bold text-center mt-2 uppercase text-slate-600"></span>
+            </div>
+            <div id="c3" class="hidden flex flex-col items-center w-24">
+                <div class="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-50">
+                    <img id="i3" class="w-full h-full object-cover">
+                </div>
+                <span id="t3" class="text-[10px] font-bold text-center mt-2 uppercase text-slate-600"></span>
+            </div>
         </div>
-        <div id="premium-ad" class="bg-blue-600 rounded-3xl p-4 text-center shadow-xl border-2 border-white hidden">
-            <p id="ad-text" class="text-white unificado italic text-xs">---</p>
-        </div>
-    </div>
 
-    <div id="servicios" class="p-4 space-y-4 max-w-md mx-auto pb-20"></div>
+        <div class="bg-white border-[3px] border-red-600 rounded-3xl p-5 text-center shadow-lg">
+            <p id="alerta" class="text-red-600 font-black text-sm uppercase">SIN NOVEDADES</p>
+        </div>
+
+        <div id="premium-ad" class="hidden bg-blue-600 rounded-3xl p-4 text-center shadow-xl border-2 border-white">
+            <p id="ad-text" class="text-white font-black italic text-xs uppercase tracking-tighter"></p>
+        </div>
+
+        <div id="servicios" class="space-y-4 pb-20"></div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -78,60 +88,38 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const id = new URLSearchParams(window.location.search).get('id');
-        let dataGlobal = {};
-
-        function getBranding(img) {
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-            ctx.drawImage(img, 0, 0);
-            const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-            let r=0, g=0, b=0, count=0;
-            for(let i=0; i<d.length; i+=100) { if(d[i+3]>128) { r+=d[i]; g+=d[i+1]; b+=d[i+2]; count++; } }
-            const color = `rgb(${Math.round(r/count)},${Math.round(g/count)},${Math.round(b/count)})`;
-            return { cp: color, cs: color.replace('rgb', 'rgba').replace(')', ', 0.08)') };
-        }
 
         function updateTime() {
             const n = new Date();
             const f = n.toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).split('/').join(' / ');
             const h = n.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12: false});
-            document.getElementById('reloj-fecha').innerText = `${h} | ${f}`;
+            document.getElementById('reloj').innerText = `${h} | ${f}`;
         }
         setInterval(updateTime, 1000); updateTime();
-
-        window.verImg = (n) => {
-            document.getElementById('modal').style.display = 'flex';
-            document.getElementById('modal-img').src = dataGlobal.config['img'+n];
-        };
 
         if(id) {
             onValue(ref(db, 'usuarios/' + id), (s) => {
                 if(!s.exists()) return;
-                const d = s.val(); dataGlobal = d;
+                const d = s.val();
                 document.getElementById('nom-emp').innerText = d.config?.nombre || "";
                 document.getElementById('ciudad').innerText = d.config?.ubi || "";
-                document.getElementById('alerta').innerText = d.mensaje?.texto || "SIN ALERTAS";
+                document.getElementById('alerta').innerText = d.mensaje?.texto || "OPERACIÓN NORMAL";
                 
                 if(d.config?.ad) {
                     document.getElementById('ad-text').innerText = d.config.ad;
                     document.getElementById('premium-ad').classList.remove('hidden');
                 }
 
-                if(d.config?.logo) {
-                    const l = document.getElementById('logo-emp');
-                    l.src = d.config.logo; l.classList.remove('hidden');
-                    l.onload = () => {
-                        const brand = getBranding(l);
-                        document.getElementById('nom-emp').style.color = brand.cp;
-                        document.body.style.backgroundColor = brand.cs;
-                    };
+                if(d.config?.logo) { 
+                    const l = document.getElementById('logo-emp'); 
+                    l.src = d.config.logo; l.classList.remove('hidden'); 
                 }
 
                 [1,2,3].forEach(n => {
-                    if(d.config['img'+n]) { 
-                        document.getElementById('i'+n).src = d.config['img'+n]; 
-                        document.getElementById('c'+n).classList.remove('hidden'); 
+                    if(d.config['img'+n]) {
+                        document.getElementById('i'+n).src = d.config['img'+n];
+                        document.getElementById('t'+n).innerText = d.config['desc'+n] || "";
+                        document.getElementById('c'+n).classList.remove('hidden');
                     }
                 });
 
@@ -141,12 +129,12 @@
                     const esRetrasado = estado?.toLowerCase().includes('retraso');
                     
                     const div = document.createElement('div');
-                    div.className = "bg-white p-5 rounded-[2rem] shadow-xl border-l-[12px] flex flex-col gap-4 " + (esRetrasado ? 'border-red-500' : 'border-green-500');
+                    div.className = `bg-white p-5 rounded-[2rem] shadow-xl border-l-[12px] flex flex-col gap-3 ${esRetrasado ? 'border-red-600' : 'border-green-600'}`;
                     div.innerHTML = `
-                        ${link ? `<a href="${link}" target="_blank" class="w-full text-[10px] bg-slate-900 text-white py-3 rounded-2xl text-center font-black uppercase tracking-widest shadow-md transition-transform active:scale-95">Ir a la Web del Cliente ➔</a>` : ''}
+                        ${link ? `<a href="${link}" target="_blank" class="w-full bg-slate-900 text-white py-3 rounded-2xl text-center font-black text-[10px] uppercase shadow-md">Ir a la Web del Cliente ➔</a>` : ''}
                         <div class="flex justify-between items-center px-1">
-                            <span class="unificado text-slate-800 tracking-tighter">${nombre}</span>
-                            <span class="px-4 py-1 rounded-full text-[10px] font-black uppercase ${esRetrasado ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}">${estado}</span>
+                            <span class="font-black text-slate-800 uppercase text-xs">${nombre}</span>
+                            <span class="font-black text-[10px] uppercase ${esRetrasado ? 'text-red-600' : 'text-green-600'}">${estado}</span>
                         </div>
                     `;
                     list.appendChild(div);

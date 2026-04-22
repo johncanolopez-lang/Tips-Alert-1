@@ -3,63 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tips Alert</title>
+    <title>Tips Alert - Información al Momento</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
         .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 10s linear infinite; }
-        .text-stroke { 
-            -webkit-text-stroke: 1.2px black; 
-            paint-order: stroke fill; 
-            color: #00A82D; /* Verde Megabús por defecto */
-        }
+        .text-stroke { -webkit-text-stroke: 1.5px black; paint-order: stroke fill; }
+        /* Tamaño aumentado para las 3 imágenes según la referencia */
+        .img-main { width: 85px; height: 85px; object-fit: cover; border-radius: 50%; border: 4px solid white; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
-<body class="bg-white min-h-screen font-sans flex flex-col overflow-x-hidden">
+<body class="bg-slate-50 min-h-screen font-sans flex flex-col overflow-x-hidden">
 
     <canvas id="canvas" class="hidden"></canvas>
 
-    <div class="flex-grow p-4 mx-auto max-w-md w-full space-y-4">
-        <div class="bg-white rounded-[2.5rem] p-5 shadow-2xl border border-slate-50 mt-4">
-            <div class="flex items-center gap-4 mb-3">
+    <div class="flex-grow p-4 mx-auto max-w-md w-full space-y-6">
+        
+        <div class="bg-white rounded-[2.5rem] p-6 shadow-2xl border border-slate-100 mt-2">
+            <div class="flex items-center gap-4 mb-4">
                 <div class="w-16 h-16 flex-shrink-0 flex items-center justify-center">
                     <img id="logo-emp" src="" class="max-h-full max-w-full object-contain hidden" crossorigin="anonymous">
                 </div>
                 <div class="flex-1 overflow-hidden border-b border-slate-100 pb-1">
-                    <h1 id="nom-emp" class="text-3xl font-black italic animate-marquee text-stroke uppercase">Cargando...</h1>
+                    <h1 id="nom-emp" class="text-4xl font-black italic animate-marquee text-stroke uppercase text-slate-300">Cargando...</h1>
                 </div>
             </div>
             
-            <div class="flex justify-between items-center px-1 font-black text-slate-700">
-                <span id="ciudad" class="text-[12px] uppercase tracking-tighter">---</span>
-                <span id="reloj-fecha" class="text-[10px] tracking-tight">--:-- | --/--/--</span>
+            <div class="flex justify-between items-center px-1 font-black text-slate-600">
+                <span id="ciudad" class="text-[14px] uppercase tracking-tighter">---</span>
+                <span id="reloj-fecha" class="text-[12px] tracking-tight">--:-- | --/--/--</span>
             </div>
         </div>
 
-        <div class="flex justify-center p-2 gap-4">
-            <div id="c1" class="hidden flex flex-col items-center w-20">
-                <div class="w-16 h-16 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-100"><img id="i1" class="w-full h-full object-cover"></div>
-                <span id="t1" class="text-[8px] font-black text-center mt-1 uppercase text-slate-500 leading-none"></span>
+        <div class="flex justify-around items-start p-2 gap-2">
+            <div id="c1" class="hidden flex flex-col items-center w-28 text-center">
+                <img id="i1" class="img-main mb-2">
+                <span id="t1" class="text-[9px] font-black uppercase text-slate-500 leading-tight"></span>
             </div>
-            <div id="c2" class="hidden flex flex-col items-center w-20">
-                <div class="w-16 h-16 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-100"><img id="i2" class="w-full h-full object-cover"></div>
-                <span id="t2" class="text-[8px] font-black text-center mt-1 uppercase text-slate-500 leading-none"></span>
+            <div id="c2" class="hidden flex flex-col items-center w-28 text-center">
+                <img id="i2" class="img-main mb-2">
+                <span id="t2" class="text-[9px] font-black uppercase text-slate-500 leading-tight"></span>
             </div>
-            <div id="c3" class="hidden flex flex-col items-center w-20">
-                <div class="w-16 h-16 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-100"><img id="i3" class="w-full h-full object-cover"></div>
-                <span id="t3" class="text-[8px] font-black text-center mt-1 uppercase text-slate-500 leading-none"></span>
+            <div id="c3" class="hidden flex flex-col items-center w-28 text-center">
+                <img id="i3" class="img-main mb-2">
+                <span id="t3" class="text-[9px] font-black uppercase text-slate-500 leading-tight"></span>
             </div>
         </div>
 
-        <div class="bg-white border-[3px] border-red-600 rounded-3xl p-5 text-center shadow-lg">
-            <p id="alerta" class="text-red-600 font-black uppercase text-sm">OPERACIÓN NORMAL</p>
+        <div class="bg-white border-[3px] border-red-600 rounded-[2rem] p-5 text-center shadow-xl">
+            <p id="alerta" class="text-red-600 font-black uppercase text-base italic tracking-tight">ESTADO DEL SERVICIO</p>
         </div>
 
-        <div id="premium-ad" class="hidden bg-blue-600 rounded-3xl p-4 text-center shadow-xl border-2 border-white">
-            <p id="ad-text" class="text-white font-black italic text-[11px] uppercase"></p>
-        </div>
-
-        <div id="servicios" class="space-y-4 pb-10"></div>
+        <div id="servicios" class="space-y-4 pb-12"></div>
     </div>
 
     <footer class="p-6 w-full max-w-md mx-auto">
@@ -83,51 +78,68 @@
         const db = getDatabase(app);
         const id = new URLSearchParams(window.location.search).get('id');
 
-        function updateTime() {
-            const n = new Date();
-            const f = n.toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).split('/').join(' / ');
-            const h = n.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12: false});
-            document.getElementById('reloj-fecha').innerText = `${h} | ${f}`;
+        // FUNCIÓN PARA DETECTAR COLOR DEL LOGO
+        function extractColor(img) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            ctx.drawImage(img, 0, 0);
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let r=0, g=0, b=0, count=0;
+            for(let i=0; i<data.length; i+=200) { // Muestreo rápido
+                if(data[i+3] > 150) { 
+                    r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+                }
+            }
+            return count > 0 ? `rgb(${Math.round(r/count)}, ${Math.round(g/count)}, ${Math.round(b/count)})` : '#00A82D';
         }
-        setInterval(updateTime, 1000); updateTime();
+
+        function updateClock() {
+            const now = new Date();
+            const d = now.toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, ' / ');
+            const t = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12: false});
+            document.getElementById('reloj-fecha').innerText = `${t} | ${d}`;
+        }
+        setInterval(updateClock, 1000); updateClock();
 
         if(id) {
-            onValue(ref(db, 'usuarios/' + id), (s) => {
-                if(!s.exists()) return;
-                const d = s.val();
-                document.getElementById('nom-emp').innerText = d.config?.nombre || "EMPRESA";
-                document.getElementById('ciudad').innerText = d.config?.ubi || "UBICACIÓN";
-                document.getElementById('alerta').innerText = d.mensaje?.texto || "SIN NOVEDADES";
-                
-                if(d.config?.ad) {
-                    document.getElementById('ad-text').innerText = d.config.ad;
-                    document.getElementById('premium-ad').classList.remove('hidden');
-                }
+            onValue(ref(db, 'usuarios/' + id), (snap) => {
+                const data = snap.val();
+                if(!data) return;
 
-                if(d.config?.logo) {
-                    const l = document.getElementById('logo-emp'); l.src = d.config.logo; l.classList.remove('hidden');
+                document.getElementById('nom-emp').innerText = data.config?.nombre || "EMPRESA";
+                document.getElementById('ciudad').innerText = data.config?.ubi || "PEREIRA - D/DAS";
+                document.getElementById('alerta').innerText = data.mensaje?.texto || "OPERACIÓN NORMAL";
+
+                if(data.config?.logo) {
+                    const l = document.getElementById('logo-emp');
+                    l.src = data.config.logo;
+                    l.classList.remove('hidden');
+                    l.onload = () => { document.getElementById('nom-emp').style.color = extractColor(l); };
                 }
 
                 [1,2,3].forEach(n => {
-                    if(d.config['img'+n]) { 
-                        document.getElementById('i'+n).src = d.config['img'+n]; 
-                        document.getElementById('t'+n).innerText = d.config['desc'+n] || "";
-                        document.getElementById('c'+n).classList.remove('hidden'); 
+                    if(data.config['img'+n]) {
+                        document.getElementById('i'+n).src = data.config['img'+n];
+                        document.getElementById('t'+n).innerText = data.config['desc'+n] || "";
+                        document.getElementById('c'+n).classList.remove('hidden');
                     }
                 });
 
-                const list = document.getElementById('servicios'); list.innerHTML = "";
-                (d.lista?.items || []).forEach(i => {
-                    const [nombre, estado, link] = i.split(':').map(x => x?.trim());
-                    const esRetrasado = estado?.toLowerCase().includes('retraso');
+                const list = document.getElementById('servicios');
+                list.innerHTML = "";
+                (data.lista?.items || []).forEach(item => {
+                    const [nombre, estado, link] = item.split(':').map(s => s?.trim());
+                    const isDelayed = estado?.toUpperCase().includes('RETRASO') || estado?.toUpperCase().includes('RETRASADA');
                     
                     const div = document.createElement('div');
-                    div.className = "bg-white p-5 rounded-[2.5rem] shadow-xl border-l-[12px] flex flex-col gap-4 " + (esRetrasado ? 'border-red-600' : 'border-green-600');
+                    div.className = `bg-white p-5 rounded-[2.5rem] shadow-xl border-l-[12px] flex flex-col gap-4 ${isDelayed ? 'border-red-600' : 'border-green-600'}`;
                     div.innerHTML = `
-                        ${link ? `<a href="${link}" target="_blank" class="w-full bg-slate-900 text-white py-3 rounded-2xl text-center font-black uppercase text-[10px] shadow-lg">Ver Ruta del Cliente ➔</a>` : ''}
+                        ${link ? `<a href="${link}" target="_blank" class="w-full bg-[#0F172A] text-white py-4 rounded-2xl text-center font-black uppercase text-[12px] shadow-lg tracking-wider">Ruta Alimentadora ➔</a>` : ''}
                         <div class="flex justify-between items-center px-1">
-                            <span class="font-black text-slate-800 text-[12px] uppercase">${nombre}</span>
-                            <span class="font-black ${esRetrasado ? 'text-red-600' : 'text-green-600'} text-[11px] uppercase">${estado}</span>
+                            <span class="font-black text-slate-800 text-[14px] uppercase">${nombre}</span>
+                            <span class="font-black ${isDelayed ? 'text-red-600' : 'text-green-600'} text-[13px] uppercase">${estado}</span>
                         </div>
                     `;
                     list.appendChild(div);

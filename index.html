@@ -10,38 +10,30 @@
         .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 12s linear infinite; }
         .text-stroke { -webkit-text-stroke: 1.5px black; paint-order: stroke fill; }
         
-        /* ZOOM TIPO LUPA: Crece sin mover el resto de elementos */
-        .zoom-box { position: relative; width: 80px; height: 80px; z-index: 10; }
+        .zoom-box { position: relative; width: 80px; height: 80px; }
         .zoom-box img { 
             width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: pointer; border: 4px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .zoom-box img:active { 
-            transform: scale(2.8); 
-            z-index: 100; 
-            border-radius: 12px; 
-            box-shadow: 0 20px 25px rgba(0,0,0,0.4);
-        }
+        .zoom-box img:active { transform: scale(3); z-index: 100; border-radius: 12px; box-shadow: 0 20px 25px rgba(0,0,0,0.5); position: relative; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans flex flex-col overflow-x-hidden">
-
+<body class="bg-slate-50 min-h-screen flex flex-col overflow-x-hidden">
     <canvas id="canvas" class="hidden"></canvas>
-
     <div class="flex-grow p-4 mx-auto max-w-md w-full space-y-4">
         
-        <div class="bg-white rounded-[2.5rem] p-5 shadow-2xl border border-slate-100 mt-2">
+        <div class="bg-white rounded-[2.5rem] p-5 shadow-2xl border border-slate-100">
             <div class="flex items-center gap-4 mb-3">
                 <div class="w-14 h-14 flex-shrink-0 flex items-center justify-center">
                     <img id="logo-emp" src="" class="max-h-full max-w-full object-contain hidden" crossorigin="anonymous">
                 </div>
                 <div class="flex-1 overflow-hidden border-b border-slate-100 pb-1">
-                    <h1 id="nom-emp" class="text-3xl font-black italic animate-marquee text-stroke uppercase">Cargando...</h1>
+                    <h1 id="nom-emp" class="text-3xl font-black italic animate-marquee text-stroke uppercase text-green-600">CARGANDO...</h1>
                 </div>
             </div>
             <div class="flex justify-between items-center px-1 font-black text-slate-700 text-[11px] uppercase tracking-tighter">
-                <span id="ciudad">PEREIRA - D/DAS</span>
+                <span id="ciudad">---</span>
                 <span id="reloj-fecha">--:-- | -- / -- / --</span>
             </div>
         </div>
@@ -62,17 +54,11 @@
         </div>
 
         <div class="bg-white border-[3px] border-red-600 rounded-[2rem] p-5 text-center shadow-xl">
-            <p id="alerta" class="text-red-600 font-black uppercase text-sm italic tracking-tight italic">ESTADO DEL SERVICIO</p>
+            <p id="alerta" class="text-red-600 font-black uppercase text-sm italic italic">ESPERANDO DATOS...</p>
         </div>
 
         <div id="servicios" class="space-y-4 pb-12"></div>
     </div>
-
-    <footer class="p-6 w-full max-w-md mx-auto text-center">
-        <a href="https://wa.me/573242705861" target="_blank" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            Created by Tips Alert ➔
-        </a>
-    </footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -89,22 +75,6 @@
         const db = getDatabase(app);
         const id = new URLSearchParams(window.location.search).get('id');
 
-        // Función para extraer color dominante (Verde por defecto)
-        function aplicarColorAuto(img) {
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            ctx.drawImage(img, 0, 0);
-            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-            let r=0, g=0, b=0, count=0;
-            for(let i=0; i<data.length; i+=100) {
-                if(data[i+3] > 150) { r += data[i]; g += data[i+1]; b += data[i+2]; count++; }
-            }
-            const color = count > 0 ? `rgb(${Math.round(r/count)}, ${Math.round(g/count)}, ${Math.round(b/count)})` : '#00A82D';
-            document.getElementById('nom-emp').style.color = color;
-        }
-
         function updateClock() {
             const now = new Date();
             const d = now.toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, ' / ');
@@ -119,14 +89,15 @@
                 if(!d) return;
 
                 document.getElementById('nom-emp').innerText = d.config?.nombre || "EMPRESA";
-                document.getElementById('ciudad').innerText = d.config?.ubi || "PEREIRA - D/DAS";
+                document.getElementById('ciudad').innerText = d.config?.ubi || "CIUDAD";
                 document.getElementById('alerta').innerText = d.mensaje?.texto || "OPERACIÓN NORMAL";
 
                 if(d.config?.logo) {
                     const l = document.getElementById('logo-emp');
                     l.src = d.config.logo;
                     l.classList.remove('hidden');
-                    l.onload = () => aplicarColorAuto(l);
+                    // Forzamos el color verde que pediste para el nombre
+                    document.getElementById('nom-emp').style.color = "#00A82D";
                 }
 
                 [1,2,3].forEach(n => {
@@ -141,8 +112,24 @@
                 list.innerHTML = "";
                 (d.lista?.items || []).forEach(item => {
                     const [nombre, estado, link] = item.split(':').map(s => s?.trim());
-                    const esRetraso = estado?.toUpperCase().includes('RETRASO') || estado?.toUpperCase().includes('RETRASADA');
-                    const esNormal = estado?.toUpperCase().includes('NORMAL') || estado?.toUpperCase().includes('DESPACHADA');
+                    const esRetraso = estado?.toUpperCase().includes('RETRASO');
+                    const esNormal = estado?.toUpperCase().includes('NORMAL');
                     
                     const div = document.createElement('div');
-                    div.className = `bg-white p-5 rounded-[2.5rem] shadow-xl border-l-[12px] flex flex-col gap-4 ${esRetraso ? 'border-red-600' : 'border-green
+                    div.className = `bg-white p-5 rounded-[2.5rem] shadow-xl border-l-[12px] flex flex-col gap-4 ${esRetraso ? 'border-red-600' : 'border-green-600'}`;
+                    div.innerHTML = `
+                        ${link ? `<a href="${link}" target="_blank" class="w-full bg-[#0F172A] text-white py-4 rounded-2xl text-center font-black uppercase text-[12px]">Ruta Alimentadora ➔</a>` : ''}
+                        <div class="flex justify-between items-center px-1">
+                            <span class="font-black text-slate-800 text-[14px] uppercase">${nombre}</span>
+                            <span class="font-black ${esRetraso ? 'text-red-600' : (esNormal ? 'text-green-600' : 'text-slate-500')} text-[13px] uppercase">${estado}</span>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            });
+        } else {
+            document.getElementById('nom-emp').innerText = "ID NO ENCONTRADO";
+        }
+    </script>
+</body>
+</html>

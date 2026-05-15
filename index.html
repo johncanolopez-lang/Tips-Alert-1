@@ -3,39 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tips Alert</title>
+    <title>Tips Alert - Sistema de Alerta</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
         .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 12s linear infinite; }
         .text-stroke { -webkit-text-stroke: 1.5px black; paint-order: stroke fill; }
         
-        /* Contenedor normal */
+        /* Contenedor normal de imágenes */
         .zoom-box { position: relative; width: 85px; height: 85px; cursor: pointer; }
-        
         .zoom-box img { 
             width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
             transition: all 0.4s ease;
             border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-        /* CLASE PARA CENTRADO TOTAL AL TOCAR */
+        /* Centrado total al tocar */
         .img-abierta img { 
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(1); /* Centrado exacto */
-            width: 85vw; /* Casi todo el ancho de la pantalla */
-            height: auto;
-            max-height: 70vh;
-            border-radius: 20px; /* Ya no es un círculo para que se vea la foto completa */
-            z-index: 9999;
-            box-shadow: 0 0 0 1000px rgba(0,0,0,0.7); /* Fondo oscuro detrás */
-            object-fit: contain; /* Para que la foto se vea completa sin cortarse */
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1);
+            width: 85vw; height: auto; max-height: 70vh; border-radius: 20px;
+            z-index: 9999; box-shadow: 0 0 0 1000px rgba(0,0,0,0.8); object-fit: contain;
         }
 
-        /* Bloquear scroll cuando la foto está abierta */
         body.no-scroll { overflow: hidden; }
+
+        /* Animación de parpadeo para Emergencias */
+        @keyframes blink-red {
+            0% { background-color: #ffffff; border-color: #ef4444; }
+            50% { background-color: #fee2e2; border-color: #b91c1c; }
+            100% { background-color: #ffffff; border-color: #ef4444; }
+        }
+        .alerta-emergencia {
+            animation: blink-red 1s infinite;
+            border-width: 4px !important;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans flex flex-col overflow-x-hidden">
@@ -72,8 +73,9 @@
             </div>
         </div>
 
-        <div class="bg-white border-[3px] border-red-600 rounded-[2rem] p-5 text-center shadow-xl">
-            <p id="alerta" class="text-red-600 font-black uppercase text-sm italic italic">ESTADO DEL SERVICIO</p>
+        <!-- Contenedor de la alerta -->
+        <div id="contenedor-alerta" class="bg-white border-[3px] border-red-600 rounded-[2rem] p-5 text-center shadow-xl transition-all duration-300">
+            <p id="alerta" class="text-red-600 font-black uppercase text-sm italic">ESTADO DEL SERVICIO</p>
         </div>
 
         <div id="servicios" class="space-y-4 pb-12"></div>
@@ -94,12 +96,14 @@
         const db = getDatabase(app);
         const id = new URLSearchParams(window.location.search).get('id');
 
-        // Lógica de centrado al tocar
+        let ultimoMensaje = "";
+        // Sonido de alerta (puedes cambiar esta URL por tu archivo .mp3 favorito)
+        const sonidoAlerta = new Audio('https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3'); 
+
         window.toggleZoom = (el) => {
             const isOpen = el.classList.contains('img-abierta');
             document.querySelectorAll('.zoom-box').forEach(box => box.classList.remove('img-abierta'));
             document.body.classList.remove('no-scroll');
-
             if (!isOpen) {
                 el.classList.add('img-abierta');
                 document.body.classList.add('no-scroll');
@@ -119,10 +123,30 @@
                 const d = snap.val();
                 if(!d) return;
 
+                const textoAlerta = d.mensaje?.texto || "OPERACIÓN NORMAL";
+                const cajaAlerta = document.getElementById('contenedor-alerta');
+                
+                // NORMALIZACIÓN DE TEXTO PARA EVITAR ERRORES DE APAGADO
+                // Convertimos a mayúsculas, quitamos espacios y tildes para la comparación
+                const normalizar = (t) => t.toUpperCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const textoLimpio = normalizar(textoAlerta);
+                const comandoApagado = "OPERACION NORMAL";
+
+                // Lógica de Alerta Visual y Sonora
+                if (textoLimpio !== comandoApagado && textoAlerta !== ultimoMensaje) {
+                    cajaAlerta.classList.add('alerta-emergencia');
+                    // El navegador requiere interacción previa para sonar
+                    sonidoAlerta.play().catch(e => console.log("Esperando clic del usuario para activar sonido"));
+                } else if (textoLimpio === comandoApagado) {
+                    cajaAlerta.classList.remove('alerta-emergencia');
+                }
+                
+                ultimoMensaje = textoAlerta;
+                document.getElementById('alerta').innerText = textoAlerta;
+
+                // Carga de datos de configuración
                 document.getElementById('nom-emp').innerText = d.config?.nombre || "EMPRESA";
                 document.getElementById('ciudad').innerText = d.config?.ubi || "UBICACIÓN";
-                document.getElementById('alerta').innerText = d.mensaje?.texto || "OPERACIÓN NORMAL";
-                document.getElementById('nom-emp').style.color = "#00A82D";
 
                 if(d.config?.logo) {
                     const l = document.getElementById('logo-emp');
